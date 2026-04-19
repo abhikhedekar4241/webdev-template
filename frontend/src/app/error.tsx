@@ -17,7 +17,10 @@ export default function Error({
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4">
       <h2 className="text-2xl font-semibold">Something went wrong</h2>
-      <p className="text-muted-foreground">{error.message}</p>
+      <p className="text-muted-foreground">An unexpected error occurred.</p>
+      {error.digest && (
+        <p className="font-mono text-xs text-muted-foreground">Ref: {error.digest}</p>
+      )}
       <Button onClick={reset}>Try again</Button>
     </div>
   );
