@@ -117,6 +117,18 @@ Unique constraint on `(org_id, user_id)`.
 
 Unique constraint on `(org_id, flag_name)`.
 
+### PasswordResetTokens
+| Field | Type | Notes |
+|---|---|---|
+| id | UUID | PK |
+| user_id | UUID | FK → users |
+| token | str | unique UUID, single-use |
+| expires_at | datetime | short TTL (e.g. 1 hour) |
+| used_at | datetime | nullable; set on redemption |
+| created_at | datetime | |
+
+Token is invalidated after first use (`used_at` set) or expiry. Only one active token per user — creating a new one invalidates previous ones.
+
 ### Files
 | Field | Type | Notes |
 |---|---|---|
@@ -158,6 +170,7 @@ backend/
 │   │   ├── user.py
 │   │   ├── org.py
 │   │   ├── invitation.py
+│   │   ├── password_reset.py
 │   │   ├── audit_log.py
 │   │   ├── feature_flag.py
 │   │   └── file.py
@@ -203,6 +216,8 @@ backend/
 - `POST /register` — create user, send welcome email
 - `POST /login` — returns JWT access token
 - `GET /me` — current user profile (protected)
+- `POST /forgot-password` — accepts email, creates reset token, sends reset email; always returns 200 (prevents email enumeration)
+- `POST /reset-password` — accepts `token` + `new_password`; validates token not expired/used, updates password, marks token used
 
 **Organizations — `/api/v1/orgs`**
 - `POST /` — create org; creator auto-assigned `owner` role
@@ -280,7 +295,8 @@ await email.send(to="user@example.com", template="invite", context={...})
 
 Templates: `invite.html`, `welcome.html`, `password_reset.html`
 
-Invitation email contains a plain link to `{FRONTEND_URL}/invitations` — no tokens in the URL.
+- Invitation email: plain link to `{FRONTEND_URL}/invitations` — no tokens in the URL.
+- Password reset email: link to `{FRONTEND_URL}/auth/reset-password?token=<token>` — token is a short-lived UUID stored in DB.
 
 ---
 
@@ -297,7 +313,9 @@ frontend/
 │   │   ├── error.tsx                # Global error boundary
 │   │   ├── auth/
 │   │   │   ├── login/page.tsx
-│   │   │   └── signup/page.tsx
+│   │   │   ├── signup/page.tsx
+│   │   │   ├── forgot-password/page.tsx   # Enter email form
+│   │   │   └── reset-password/page.tsx    # New password form (reads ?token from URL)
 │   │   ├── dashboard/page.tsx
 │   │   ├── orgs/
 │   │   │   ├── new/page.tsx
@@ -322,7 +340,7 @@ frontend/
 │   │   ├── auth.ts                  # Zustand: user, token, login(), logout()
 │   │   └── org.ts                   # Zustand: activeOrg, setActiveOrg()
 │   ├── queries/                     # TanStack Query hooks
-│   │   ├── auth.ts                  # useMe()
+│   │   ├── auth.ts                  # useMe(), useForgotPassword(), useResetPassword()
 │   │   ├── orgs.ts                  # useOrgs(), useOrgMembers()
 │   │   ├── invitations.ts           # useInvitations(), useAcceptInvitation()
 │   │   └── files.ts
