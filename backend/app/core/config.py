@@ -21,23 +21,23 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     ALGORITHM: str = "HS256"
 
-    # Email
-    SMTP_HOST: str
+    # Email (optional until email sending is used)
+    SMTP_HOST: str | None = None
     SMTP_PORT: int = 587
-    SMTP_USER: str
-    SMTP_PASSWORD: str
-    SMTP_FROM: str
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_FROM: str | None = None
 
-    # InfluxDB
+    # InfluxDB (optional until metrics are used)
     INFLUXDB_URL: str = "http://influxdb:8086"
-    INFLUXDB_TOKEN: str
-    INFLUXDB_ORG: str
-    INFLUXDB_BUCKET: str
+    INFLUXDB_TOKEN: str | None = None
+    INFLUXDB_ORG: str | None = None
+    INFLUXDB_BUCKET: str | None = None
 
-    # MinIO
+    # MinIO (optional until file uploads are used)
     MINIO_ENDPOINT: str = "minio:9000"
-    MINIO_ACCESS_KEY: str
-    MINIO_SECRET_KEY: str
+    MINIO_ACCESS_KEY: str | None = None
+    MINIO_SECRET_KEY: str | None = None
     MINIO_BUCKET: str = "uploads"
 
     # Redis
