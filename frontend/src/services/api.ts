@@ -2,7 +2,7 @@ import axios from "axios";
 import { ROUTES } from "@/constants/routes";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? "/api",
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -24,7 +24,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && typeof window !== "undefined") {
       localStorage.removeItem("access_token");
       // Also clear auth cookie for middleware
-      document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+      document.cookie = "access_token=; path=/; max-age=0; SameSite=Lax";
       window.location.href = ROUTES.auth.login;
     }
     return Promise.reject(error);
