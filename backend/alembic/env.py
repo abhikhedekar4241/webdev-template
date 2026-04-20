@@ -7,6 +7,7 @@ from sqlmodel import SQLModel
 # Import all models here as they are created in later plans so Alembic
 # can detect schema changes. Example (uncomment as models are added):
 # from app.models.user import User  # noqa: F401
+from app.models.org import Organization, OrgMembership, OrgRole  # noqa: F401
 
 config = context.config
 
