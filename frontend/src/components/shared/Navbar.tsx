@@ -5,6 +5,7 @@ import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
+import { OrgSwitcher } from "@/components/shared/OrgSwitcher";
 
 export function Navbar() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -15,6 +16,7 @@ export function Navbar() {
         <Link href={ROUTES.dashboard} className="text-lg font-semibold">
           Boilerplate
         </Link>
+        <OrgSwitcher />
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
