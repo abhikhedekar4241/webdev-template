@@ -36,3 +36,6 @@ Thumbs.db
 
 # Generated
 frontend/src/types/api.ts
+
+# Git worktrees
+.worktrees/
