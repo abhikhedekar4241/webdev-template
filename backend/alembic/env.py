@@ -1,8 +1,9 @@
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
-from alembic import context
 from sqlmodel import SQLModel
+
+from alembic import context
 
 # Import all models here as they are created in later plans so Alembic
 # can detect schema changes. Example (uncomment as models are added):
@@ -19,6 +20,7 @@ target_metadata = SQLModel.metadata
 
 def get_url() -> str:
     from app.core.config import settings
+
     return settings.DATABASE_URL
 
 
