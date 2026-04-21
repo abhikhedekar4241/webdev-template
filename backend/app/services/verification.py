@@ -1,5 +1,4 @@
-import random
-import string
+import secrets
 import uuid
 from datetime import datetime, timedelta
 
@@ -7,16 +6,17 @@ from sqlmodel import Session, select
 
 from app.models.user import User
 from app.models.verification import EmailVerification
+from app.services.base import CRUDBase
 
 OTP_EXPIRE_SECONDS = 600   # 10 minutes
 RESEND_COOLDOWN_SECONDS = 60
 
 
 def _generate_otp() -> str:
-    return "".join(random.choices(string.digits, k=6))
+    return "".join(secrets.choice("0123456789") for _ in range(6))
 
 
-class VerificationService:
+class VerificationService(CRUDBase[EmailVerification]):
     def create_otp(self, session: Session, *, user_id: uuid.UUID) -> EmailVerification:
         record = EmailVerification(
             user_id=user_id,
@@ -70,4 +70,4 @@ class VerificationService:
         return record is not None
 
 
-verification_service = VerificationService()
+verification_service = VerificationService(EmailVerification)

@@ -59,7 +59,7 @@ def register(
     body: RegisterRequest,
     session: Session = Depends(get_session),
 ) -> UserResponse:
-    existing = auth_service.get_by_email(session, body.email)
+    existing = auth_service.get_by_email(session, email=body.email)
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

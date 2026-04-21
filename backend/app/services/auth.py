@@ -1,6 +1,3 @@
-import uuid
-from datetime import datetime, timedelta
-
 from sqlmodel import Session, select
 
 from app.core.security import hash_password, verify_password
@@ -9,7 +6,7 @@ from app.services.base import CRUDBase
 
 
 class AuthService(CRUDBase[User]):
-    def get_by_email(self, session: Session, email: str) -> User | None:
+    def get_by_email(self, session: Session, *, email: str) -> User | None:
         return session.exec(select(User).where(User.email == email)).first()
 
     def create_user(
@@ -35,7 +32,7 @@ class AuthService(CRUDBase[User]):
     def authenticate(
         self, session: Session, *, email: str, password: str
     ) -> User | None:
-        user = self.get_by_email(session, email)
+        user = self.get_by_email(session, email=email)
         if not user:
             return None
         if not verify_password(password, user.hashed_password):
