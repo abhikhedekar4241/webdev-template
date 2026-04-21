@@ -1,28 +1,7 @@
-FROM node:20-alpine AS base
-
-FROM base AS deps
+FROM node:20-alpine
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci
-
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY package.json ./
+RUN npm install
 COPY . .
-RUN npm run build
-
-FROM base AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
-
-USER appuser
-
 EXPOSE 3000
-ENV PORT=3000
-CMD ["node", "server.js"]
+CMD ["npm", "run", "dev"]

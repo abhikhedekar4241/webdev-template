@@ -101,7 +101,7 @@ services:
     build: ./frontend
     command: npm run dev
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost/api
+      NEXT_PUBLIC_API_URL: http://localhost
     volumes:
       - ./frontend:/app
       - /app/node_modules

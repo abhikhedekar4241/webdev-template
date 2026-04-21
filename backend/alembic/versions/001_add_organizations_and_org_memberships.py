@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "001_add_orgs"
-down_revision = None
+down_revision = "000_add_users"
 branch_labels = None
 depends_on = None
 

@@ -15,7 +15,7 @@ export const filesService = {
     const form = new FormData();
     form.append("file", file);
     return api
-      .post<FileData>(`/v1/files/?org_id=${orgId}`, form, {
+      .post<FileData>(`/api/v1/files/?org_id=${orgId}`, form, {
         headers: { "Content-Type": "multipart/form-data" },
       })
       .then((r) => r.data);
@@ -23,8 +23,8 @@ export const filesService = {
 
   getUrl: (fileId: string) =>
     api
-      .get<{ url: string }>(`/v1/files/${fileId}/url`)
+      .get<{ url: string }>(`/api/v1/files/${fileId}/url`)
       .then((r) => r.data.url),
 
-  delete: (fileId: string) => api.delete(`/v1/files/${fileId}`),
+  delete: (fileId: string) => api.delete(`/api/v1/files/${fileId}`),
 };

@@ -165,3 +165,31 @@ def test_accept_nonexistent_returns_404(client: TestClient, alice):
         headers=auth_header(alice.id),
     )
     assert resp.status_code == 404
+
+
+def test_duplicate_invitation_rejected(client: TestClient, alice, org):
+    resp1 = client.post(
+        "/api/v1/invitations/",
+        json={"org_id": str(org.id), "email": "newbie@example.com", "role": "member"},
+        headers=auth_header(alice.id),
+    )
+    assert resp1.status_code == 201
+
+    resp2 = client.post(
+        "/api/v1/invitations/",
+        json={"org_id": str(org.id), "email": "newbie@example.com", "role": "member"},
+        headers=auth_header(alice.id),
+    )
+    assert resp2.status_code == 409
+    assert "pending invitation" in resp2.json()["detail"].lower()
+
+
+def test_invite_existing_member_rejected(client: TestClient, alice, bob, org, session):
+    org_service.add_member(session, org_id=org.id, user_id=bob.id, role=OrgRole.member)
+    resp = client.post(
+        "/api/v1/invitations/",
+        json={"org_id": str(org.id), "email": bob.email, "role": "member"},
+        headers=auth_header(alice.id),
+    )
+    assert resp.status_code == 409
+    assert "already a member" in resp.json()["detail"].lower()

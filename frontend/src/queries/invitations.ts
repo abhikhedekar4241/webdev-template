@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { QUERY_KEYS } from "@/constants/queryKeys";
+import { getApiError } from "@/lib/apiError";
 import { invitationsService } from "@/services/invitations";
 
 export function useInvitations() {
@@ -50,12 +51,12 @@ export function useCreateInvitation() {
   return useMutation({
     mutationFn: (data: { org_id: string; email: string; role: string }) =>
       invitationsService.create(data),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.invitations.list });
-      toast.success("Invitation sent");
+      toast.success(`Invitation sent to ${variables.email}`);
     },
-    onError: () => {
-      toast.error("Failed to send invitation");
+    onError: (err) => {
+      toast.error(getApiError(err, "Failed to send invitation"));
     },
   });
 }

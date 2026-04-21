@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { QUERY_KEYS } from "@/constants/queryKeys";
 import { ROUTES } from "@/constants/routes";
+import { getApiError } from "@/lib/apiError";
 import { orgsService } from "@/services/orgs";
 import { useOrgStore } from "@/store/org";
 
@@ -38,8 +39,8 @@ export function useCreateOrg() {
       toast.success("Organization created");
       router.push(ROUTES.orgs.detail(org.id));
     },
-    onError: () => {
-      toast.error("Failed to create organization");
+    onError: (err) => {
+      toast.error(getApiError(err, "Failed to create organization"));
     },
   });
 }
@@ -57,8 +58,8 @@ export function useUpdateOrg(orgId: string) {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.orgs.list });
       toast.success("Organization updated");
     },
-    onError: () => {
-      toast.error("Failed to update organization");
+    onError: (err) => {
+      toast.error(getApiError(err, "Failed to update organization"));
     },
   });
 }

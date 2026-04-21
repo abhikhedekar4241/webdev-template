@@ -5,7 +5,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from app.api.v1 import files, flags, health, invitations, orgs
+from app.api.v1 import auth, files, flags, health, invitations, orgs
 from app.core.config import settings
 from app.core.middleware import RequestIDMiddleware
 
@@ -39,6 +39,7 @@ app.add_middleware(
 )
 
 app.include_router(health.router, tags=["health"])
+app.include_router(auth.router)
 app.include_router(orgs.router)
 app.include_router(invitations.router)
 app.include_router(files.router)

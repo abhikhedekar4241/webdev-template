@@ -159,3 +159,32 @@ def test_remove_member(client: TestClient, alice, bob, session):
         headers=auth_header(alice.id),
     )
     assert resp.status_code == 204
+
+
+def test_create_org_duplicate_slug_returns_409(client: TestClient, alice):
+    resp1 = client.post(
+        "/api/v1/orgs/",
+        json={"name": "Acme", "slug": "dup-slug"},
+        headers=auth_header(alice.id),
+    )
+    assert resp1.status_code == 201
+
+    resp2 = client.post(
+        "/api/v1/orgs/",
+        json={"name": "Acme2", "slug": "dup-slug"},
+        headers=auth_header(alice.id),
+    )
+    assert resp2.status_code == 409
+    assert "slug" in resp2.json()["detail"].lower()
+
+
+def test_cannot_remove_owner(client: TestClient, alice, session):
+    org = org_service.create_org(
+        session, name="Team4", slug="team4", created_by=alice.id
+    )
+    resp = client.delete(
+        f"/api/v1/orgs/{org.id}/members/{alice.id}",
+        headers=auth_header(alice.id),
+    )
+    assert resp.status_code == 403
+    assert "owner" in resp.json()["detail"].lower()

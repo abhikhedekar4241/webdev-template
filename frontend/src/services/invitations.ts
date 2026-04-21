@@ -12,18 +12,18 @@ export interface InvitationData {
 
 export const invitationsService = {
   list: () =>
-    api.get<InvitationData[]>("/v1/invitations/").then((r) => r.data),
+    api.get<InvitationData[]>("/api/v1/invitations/").then((r) => r.data),
 
   create: (data: { org_id: string; email: string; role: string }) =>
-    api.post<InvitationData>("/v1/invitations/", data).then((r) => r.data),
+    api.post<InvitationData>("/api/v1/invitations/", data).then((r) => r.data),
 
   accept: (invId: string) =>
     api
-      .post<{ message: string }>(`/v1/invitations/${invId}/accept`)
+      .post<{ message: string }>(`/api/v1/invitations/${invId}/accept`)
       .then((r) => r.data),
 
   decline: (invId: string) =>
     api
-      .post<{ message: string }>(`/v1/invitations/${invId}/decline`)
+      .post<{ message: string }>(`/api/v1/invitations/${invId}/decline`)
       .then((r) => r.data),
 };
