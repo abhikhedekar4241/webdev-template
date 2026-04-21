@@ -12,5 +12,6 @@ class User(SQLModel, table=True):
     hashed_password: str
     full_name: str
     is_active: bool = Field(default=True)
+    is_verified: bool = Field(default=False)
     deleted_at: datetime | None = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)

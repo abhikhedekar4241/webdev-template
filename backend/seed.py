@@ -45,9 +45,22 @@ def seed():
                 print(f"User already exists: {u['email']}")
             users[u["email"]] = user
 
-        # Create org
+        # Mark seed users as verified so dev login works
         admin = users["admin@example.com"]
+        if not admin.is_verified:
+            admin.is_verified = True
+            session.add(admin)
+            session.commit()
+            session.refresh(admin)
+
         member = users["member@example.com"]
+        if not member.is_verified:
+            member.is_verified = True
+            session.add(member)
+            session.commit()
+            session.refresh(member)
+
+        # Create org
 
         existing_org = session.exec(
             select(Organization).where(Organization.slug == "demo-org")
