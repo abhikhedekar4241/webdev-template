@@ -9,6 +9,7 @@ from sqlmodel import Session, select
 from app.core.db import engine
 from app.models.org import Organization, OrgRole
 from app.services.auth import auth_service
+from app.services.invitations import invitation_service
 from app.services.orgs import org_service
 
 USERS = [
@@ -63,7 +64,28 @@ def seed():
                 f"Created org: demo-org (admin: {admin.email}, member: {member.email})"
             )
         else:
+            org = existing_org
             print("Org already exists: demo-org")
+
+        # Create pending invitation for demonstration
+        from app.models.invitation import OrgInvitation
+        from sqlmodel import select as sa_select
+
+        existing_invite = session.exec(
+            sa_select(OrgInvitation).where(
+                OrgInvitation.invited_email == "invited@example.com"
+            )
+        ).first()
+
+        if not existing_invite:
+            invitation_service.create_invitation(
+                session,
+                org_id=org.id,
+                invited_email="invited@example.com",
+                role=OrgRole.member,
+                invited_by=admin.id,
+            )
+            print("Created pending invitation for: invited@example.com")
 
     print("Seed complete.")
 

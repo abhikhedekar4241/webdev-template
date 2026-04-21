@@ -30,3 +30,22 @@ class MembershipFactory(factory.Factory):
     user_id = factory.LazyFunction(uuid.uuid4)
     role = OrgRole.member
     joined_at = factory.LazyFunction(datetime.utcnow)
+
+
+from datetime import timedelta
+
+from app.models.invitation import InvitationStatus, OrgInvitation
+
+
+class InvitationFactory(factory.Factory):
+    class Meta:
+        model = OrgInvitation
+
+    id = factory.LazyFunction(uuid.uuid4)
+    org_id = factory.LazyFunction(uuid.uuid4)
+    invited_email = factory.Sequence(lambda n: f"invite{n}@example.com")
+    role = OrgRole.member
+    invited_by = factory.LazyFunction(uuid.uuid4)
+    status = InvitationStatus.pending
+    expires_at = factory.LazyFunction(lambda: datetime.utcnow() + timedelta(days=7))
+    created_at = factory.LazyFunction(datetime.utcnow)
