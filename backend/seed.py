@@ -7,6 +7,7 @@ sys.path.insert(0, "/app")
 from sqlmodel import Session, select
 
 from app.core.db import engine
+from app.models.invitation import OrgInvitation
 from app.models.org import Organization, OrgRole
 from app.services.auth import auth_service
 from app.services.invitations import invitation_service
@@ -81,11 +82,8 @@ def seed():
             print("Org already exists: demo-org")
 
         # Create pending invitation for demonstration
-        from app.models.invitation import OrgInvitation
-        from sqlmodel import select as sa_select
-
         existing_invite = session.exec(
-            sa_select(OrgInvitation).where(
+            select(OrgInvitation).where(
                 OrgInvitation.invited_email == "invited@example.com"
             )
         ).first()
