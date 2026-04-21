@@ -13,12 +13,19 @@ class AuthService(CRUDBase[User]):
         return session.exec(select(User).where(User.email == email)).first()
 
     def create_user(
-        self, session: Session, *, email: str, password: str, full_name: str
+        self,
+        session: Session,
+        *,
+        email: str,
+        password: str,
+        full_name: str,
+        is_verified: bool = False,
     ) -> User:
         user = User(
             email=email,
             hashed_password=hash_password(password),
             full_name=full_name,
+            is_verified=is_verified,
         )
         session.add(user)
         session.commit()
