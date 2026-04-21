@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>You're invited</title></head>
+<body>
+  <h1>You've been invited to join {{ org_name }}!</h1>
+  <p>Hi there,</p>
+  <p>
+    <strong>{{ invited_by_name }}</strong> has invited you to join
+    <strong>{{ org_name }}</strong> as a <strong>{{ role }}</strong>.
+  </p>
+  <p>
+    <a href="{{ invitations_url }}">View your invitations</a>
+  </p>
+  <p>This invitation expires in 7 days.</p>
+  <p>If you don't have an account yet, you'll be asked to sign up first.</p>
+</body>
+</html>
