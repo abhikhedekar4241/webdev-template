@@ -1,9 +1,10 @@
 import re
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import factory
 
+from app.models.invitation import InvitationStatus, OrgInvitation
 from app.models.org import Organization, OrgMembership, OrgRole
 
 
@@ -30,11 +31,6 @@ class MembershipFactory(factory.Factory):
     user_id = factory.LazyFunction(uuid.uuid4)
     role = OrgRole.member
     joined_at = factory.LazyFunction(datetime.utcnow)
-
-
-from datetime import timedelta
-
-from app.models.invitation import InvitationStatus, OrgInvitation
 
 
 class InvitationFactory(factory.Factory):

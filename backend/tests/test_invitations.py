@@ -4,9 +4,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.core.security import create_access_token
-from app.models.invitation import InvitationStatus, OrgInvitation
-from app.models.org import OrgMembership, OrgRole, Organization
-from app.models.user import User
+from app.models.invitation import InvitationStatus
+from app.models.org import OrgRole
 from app.services.auth import auth_service
 from app.services.invitations import invitation_service
 from app.services.orgs import org_service
@@ -125,7 +124,7 @@ def test_accept_invitation(client: TestClient, alice, bob, org, session):
 def test_accept_invitation_wrong_user_returns_403(
     client: TestClient, alice, bob, org, session
 ):
-    carol = auth_service.create_user(
+    auth_service.create_user(
         session, email="carol@example.com", password="pass", full_name="Carol"
     )
     inv = invitation_service.create_invitation(
