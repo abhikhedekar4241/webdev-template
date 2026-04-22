@@ -25,8 +25,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Authenticated user hitting login → redirect to dashboard
-  if (token && pathname === "/auth/login") {
+  // Authenticated user hitting any auth page → redirect to dashboard
+  // (except /auth/callback which processes the OAuth token handoff)
+  if (token && isPublicPath && pathname !== "/auth/callback") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
