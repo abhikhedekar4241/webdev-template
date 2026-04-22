@@ -96,3 +96,111 @@ def test_has_recent_otp_false_after_60s(session, unverified_user):
     session.add(otp_record)
     session.commit()
     assert verification_service.has_recent_otp(session, user_id=unverified_user.id) is False
+
+
+# --- API tests ---
+
+from fastapi.testclient import TestClient
+
+
+def test_login_unverified_returns_403(client: TestClient, session):
+    auth_service.create_user(
+        session,
+        email="blocked@example.com",
+        password="password123",
+        full_name="Blocked",
+    )
+    resp = client.post(
+        "/api/v1/auth/login",
+        data={"username": "blocked@example.com", "password": "password123"},
+    )
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "Email not verified"
+
+
+def test_register_creates_unverified_user(client: TestClient):
+    resp = client.post(
+        "/api/v1/auth/register",
+        json={"email": "new@example.com", "password": "password123", "full_name": "New"},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["is_verified"] is False
+
+
+def test_verify_email_returns_token(client: TestClient, session):
+    user = auth_service.create_user(
+        session,
+        email="verify@example.com",
+        password="password123",
+        full_name="Verify Me",
+    )
+    otp_record = verification_service.create_otp(session, user_id=user.id)
+    resp = client.post(
+        "/api/v1/auth/verify-email",
+        json={"email": "verify@example.com", "otp": otp_record.otp},
+    )
+    assert resp.status_code == 200
+    assert "access_token" in resp.json()
+
+
+def test_verify_email_wrong_otp_returns_400(client: TestClient, session):
+    auth_service.create_user(
+        session,
+        email="wrongotp@example.com",
+        password="password123",
+        full_name="Wrong OTP",
+    )
+    resp = client.post(
+        "/api/v1/auth/verify-email",
+        json={"email": "wrongotp@example.com", "otp": "999999"},
+    )
+    assert resp.status_code == 400
+
+
+def test_resend_verification_success(client: TestClient, session):
+    auth_service.create_user(
+        session,
+        email="resend@example.com",
+        password="password123",
+        full_name="Resend",
+    )
+    resp = client.post(
+        "/api/v1/auth/resend-verification",
+        json={"email": "resend@example.com"},
+    )
+    assert resp.status_code == 200
+
+
+def test_resend_verification_rate_limit(client: TestClient, session):
+    user = auth_service.create_user(
+        session,
+        email="ratelimit@example.com",
+        password="password123",
+        full_name="Rate",
+    )
+    verification_service.create_otp(session, user_id=user.id)
+    resp = client.post(
+        "/api/v1/auth/resend-verification",
+        json={"email": "ratelimit@example.com"},
+    )
+    assert resp.status_code == 429
+
+
+def test_login_after_verification_succeeds(client: TestClient, session):
+    user = auth_service.create_user(
+        session,
+        email="afterverify@example.com",
+        password="password123",
+        full_name="After",
+    )
+    otp_record = verification_service.create_otp(session, user_id=user.id)
+    client.post(
+        "/api/v1/auth/verify-email",
+        json={"email": "afterverify@example.com", "otp": otp_record.otp},
+    )
+    resp = client.post(
+        "/api/v1/auth/login",
+        data={"username": "afterverify@example.com", "password": "password123"},
+    )
+    assert resp.status_code == 200
+    assert "access_token" in resp.json()
