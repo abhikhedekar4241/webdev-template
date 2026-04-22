@@ -4,7 +4,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.db import get_session
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1")
 
 
 @router.get("/health")

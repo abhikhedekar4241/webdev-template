@@ -78,7 +78,7 @@ class OrgService(CRUDBase[Organization]):
         org = await self.get_by_slug(session, slug=slug)
         if not org or org.deleted_at is not None:
             return None
-        membership = self.get_membership(session, org_id=org.id, user_id=user_id)
+        membership = await self.get_membership(session, org_id=org.id, user_id=user_id)
         if not membership:
             return None
         return org

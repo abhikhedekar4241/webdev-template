@@ -38,7 +38,7 @@ async def create_org(
         await session.refresh(org)
         return org
     except IntegrityError:
-        session.rollback()
+        await session.rollback()
         raise HTTPException(
             status_code=409, detail="An organization with this slug already exists"
         )
@@ -92,7 +92,7 @@ async def update_org(
         await session.refresh(updated)
         return updated
     except IntegrityError:
-        session.rollback()
+        await session.rollback()
         raise HTTPException(
             status_code=409, detail="An organization with this slug already exists"
         )
