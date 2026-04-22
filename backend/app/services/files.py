@@ -1,6 +1,6 @@
-import io
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from typing import BinaryIO
 
 import structlog
 from minio import Minio
@@ -17,34 +17,43 @@ PRESIGN_EXPIRY_SECONDS = 3600  # 1 hour
 
 
 class FilesService(CRUDBase[File]):
+    _client_instance: Minio | None = None
+    _bucket_verified: bool = False
+
     @property
     def _client(self) -> Minio:
-        return Minio(
-            settings.MINIO_ENDPOINT,
-            access_key=settings.MINIO_ACCESS_KEY,
-            secret_key=settings.MINIO_SECRET_KEY,
-            secure=False,
-        )
+        if not self._client_instance:
+            self._client_instance = Minio(
+                settings.MINIO_ENDPOINT,
+                access_key=settings.MINIO_ACCESS_KEY,
+                secret_key=settings.MINIO_SECRET_KEY,
+                secure=False,
+            )
+        return self._client_instance
 
     def _ensure_bucket(self) -> None:
+        if self._bucket_verified:
+            return
+
         client = self._client
         try:
             if not client.bucket_exists(settings.MINIO_BUCKET):
                 client.make_bucket(settings.MINIO_BUCKET)
+            self._bucket_verified = True
         except S3Error as e:
             logger.error("minio_bucket_error", error=str(e))
             raise
 
-    def upload(self, *, data: bytes, storage_key: str, content_type: str) -> None:
+    def upload(self, *, data: BinaryIO, length: int, storage_key: str, content_type: str) -> None:
         self._ensure_bucket()
         self._client.put_object(
             settings.MINIO_BUCKET,
             storage_key,
-            io.BytesIO(data),
-            length=len(data),
+            data,
+            length=length,
             content_type=content_type,
         )
-        logger.info("file_uploaded", storage_key=storage_key)
+        logger.info("file_uploaded", storage_key=storage_key, size_bytes=length)
 
     def presigned_url(self, storage_key: str) -> str:
         return self._client.presigned_get_object(
@@ -80,8 +89,8 @@ class FilesService(CRUDBase[File]):
             size_bytes=size_bytes,
         )
         session.add(f)
-        session.commit()
-        session.refresh(f)
+        session.flush()
+        logger.info("file_metadata_saved", file_id=str(f.id), storage_key=storage_key)
         return f
 
     def get_active_file(self, session: Session, *, file_id: uuid.UUID) -> File | None:
@@ -91,10 +100,10 @@ class FilesService(CRUDBase[File]):
         return None
 
     def soft_delete(self, session: Session, *, file: File) -> File:
-        file.deleted_at = datetime.utcnow()
+        file.deleted_at = datetime.now(UTC)
         session.add(file)
-        session.commit()
-        session.refresh(file)
+        session.flush()
+        logger.info("file_soft_deleted", file_id=str(file.id))
         return file
 
 

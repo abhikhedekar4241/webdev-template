@@ -1,29 +1,19 @@
 import api from "./api";
+import { components } from "@/types/api";
 
-export interface InvitationData {
-  id: string;
-  org_id: string;
-  invited_email: string;
-  role: "owner" | "admin" | "member";
-  status: "pending" | "accepted" | "declined";
-  expires_at: string;
-  created_at: string;
-}
+type InvitationResponse = components["schemas"]["InvitationResponse"];
+type InvitationCreate = components["schemas"]["InvitationCreate"];
+type MessageResponse = components["schemas"]["MessageResponse"];
 
 export const invitationsService = {
-  list: () =>
-    api.get<InvitationData[]>("/api/v1/invitations/").then((r) => r.data),
+  list: () => api.get<InvitationResponse[]>("/api/v1/invitations/"),
 
-  create: (data: { org_id: string; email: string; role: string }) =>
-    api.post<InvitationData>("/api/v1/invitations/", data).then((r) => r.data),
+  create: (data: InvitationCreate) =>
+    api.post<InvitationResponse>("/api/v1/invitations/", data),
 
   accept: (invId: string) =>
-    api
-      .post<{ message: string }>(`/api/v1/invitations/${invId}/accept`)
-      .then((r) => r.data),
+    api.post<MessageResponse>(`/api/v1/invitations/${invId}/accept`),
 
   decline: (invId: string) =>
-    api
-      .post<{ message: string }>(`/api/v1/invitations/${invId}/decline`)
-      .then((r) => r.data),
+    api.post<MessageResponse>(`/api/v1/invitations/${invId}/decline`),
 };

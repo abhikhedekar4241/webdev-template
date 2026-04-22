@@ -1,6 +1,6 @@
 import secrets
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from sqlmodel import Session, select
 
@@ -21,11 +21,10 @@ class VerificationService(CRUDBase[EmailVerification]):
         record = EmailVerification(
             user_id=user_id,
             otp=_generate_otp(),
-            expires_at=datetime.utcnow() + timedelta(seconds=OTP_EXPIRE_SECONDS),
+            expires_at=datetime.now(UTC) + timedelta(seconds=OTP_EXPIRE_SECONDS),
         )
         session.add(record)
-        session.commit()
-        session.refresh(record)
+        session.flush()
         return record
 
     def verify_otp(
@@ -41,7 +40,7 @@ class VerificationService(CRUDBase[EmailVerification]):
                 EmailVerification.user_id == user.id,
                 EmailVerification.otp == otp,
                 EmailVerification.used_at.is_(None),  # type: ignore[union-attr]
-                EmailVerification.expires_at > datetime.utcnow(),
+                EmailVerification.expires_at > datetime.now(UTC),
             )
             .order_by(EmailVerification.created_at.desc())  # type: ignore[union-attr]
         ).first()
@@ -49,16 +48,15 @@ class VerificationService(CRUDBase[EmailVerification]):
         if not record:
             return None
 
-        record.used_at = datetime.utcnow()
+        record.used_at = datetime.now(UTC)
         user.is_verified = True
         session.add(record)
         session.add(user)
-        session.commit()
-        session.refresh(user)
+        session.flush()
         return user
 
     def has_recent_otp(self, session: Session, *, user_id: uuid.UUID) -> bool:
-        cutoff = datetime.utcnow() - timedelta(seconds=RESEND_COOLDOWN_SECONDS)
+        cutoff = datetime.now(UTC) - timedelta(seconds=RESEND_COOLDOWN_SECONDS)
         record = session.exec(
             select(EmailVerification)
             .where(

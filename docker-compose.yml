@@ -72,7 +72,10 @@ services:
       - "9001:9001"
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        INSTALL_DEV: "true"
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     env_file: .env
     volumes:

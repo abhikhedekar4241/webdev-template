@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -34,7 +38,7 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
           restore-keys: ${{ runner.os }}-pip-
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements-dev.txt
         working-directory: backend
       - name: Lint
         run: ruff check app/ tests/
@@ -42,7 +46,9 @@ jobs:
       - name: Format check
         run: ruff format --check app/ tests/
         working-directory: backend
-      - name: Test
+      - name: Test with Coverage
+        id: coverage
+        continue-on-error: true
         env:
           POSTGRES_HOST: localhost
           POSTGRES_USER: test
@@ -62,8 +68,47 @@ jobs:
           MINIO_ACCESS_KEY: test
           MINIO_SECRET_KEY: test
           REDIS_URL: redis://localhost:6379/0
-        run: pytest tests/ -v
+        run: |
+          pytest -n auto --cov=app --cov-report=term-missing | tee coverage_report.txt
         working-directory: backend
+
+      - name: Parse Coverage
+        id: parse_coverage
+        if: always()
+        run: |
+          if [ -f backend/coverage_report.txt ]; then
+            TOTAL=$(grep "^TOTAL" backend/coverage_report.txt | grep -oE '[0-9]+%' | grep -oE '[0-9]+' || echo "")
+            echo "TOTAL_COVERAGE=$TOTAL" >> $GITHUB_OUTPUT
+            if [ -n "$TOTAL" ] && [ "$TOTAL" -lt 85 ]; then
+              echo "is_low=true" >> $GITHUB_OUTPUT
+            else
+              echo "is_low=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "is_low=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Coverage Issue
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.parse_coverage.outputs.is_low == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TOTAL: ${{ steps.parse_coverage.outputs.TOTAL_COVERAGE }}
+        run: |
+          echo "## Backend Coverage Report Summary" > issue_body.md
+          echo "Current coverage: **${TOTAL}%** (Threshold: 85%)" >> issue_body.md
+          echo "" >> issue_body.md
+          echo '```' >> issue_body.md
+          cat backend/coverage_report.txt >> issue_body.md
+          echo '```' >> issue_body.md
+          gh issue create --title "Low Coverage Alert: ${TOTAL}%" --body-file issue_body.md --label "bug,coverage"
+
+      - name: Check Test Result
+        if: always()
+        run: |
+          if [ "${{ steps.coverage.outcome }}" == "failure" ]; then
+            echo "Tests failed. Failing the job."
+            exit 1
+          fi
 
   frontend:
     runs-on: ubuntu-latest

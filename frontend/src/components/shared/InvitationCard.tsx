@@ -9,12 +9,21 @@ import type { Role } from "@/constants/roles";
 
 interface InvitationCardProps {
   invitation: InvitationData;
+  onSuccess?: () => void;
 }
 
-export function InvitationCard({ invitation }: InvitationCardProps) {
+export function InvitationCard({ invitation, onSuccess }: InvitationCardProps) {
   const { mutate: accept, isPending: isAccepting } = useAcceptInvitation();
   const { mutate: decline, isPending: isDeclining } = useDeclineInvitation();
   const isPending = isAccepting || isDeclining;
+
+  const handleAccept = () => {
+    accept(invitation.id, {
+      onSuccess: () => {
+        onSuccess?.();
+      },
+    });
+  };
 
   const expiresAt = new Date(invitation.expires_at);
   const daysLeft = Math.ceil((expiresAt.getTime() - Date.now()) / 86_400_000);
@@ -28,7 +37,7 @@ export function InvitationCard({ invitation }: InvitationCardProps) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-semibold">Organization invitation</p>
+            <p className="font-semibold">{invitation.org_name}</p>
             <Badge variant={invitation.role as Role}>
               {ROLE_LABELS[invitation.role as Role]}
             </Badge>
@@ -53,7 +62,7 @@ export function InvitationCard({ invitation }: InvitationCardProps) {
       <div className="flex items-center gap-2 border-t border-border bg-muted/30 px-5 py-3">
         <button
           disabled={isPending}
-          onClick={() => accept(invitation.id)}
+          onClick={handleAccept}
           className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 disabled:opacity-50"
         >
           <Check className="h-3.5 w-3.5" />

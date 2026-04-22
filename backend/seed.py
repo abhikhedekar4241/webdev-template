@@ -32,7 +32,7 @@ def seed():
         # Create users
         users = {}
         for u in USERS:
-            existing = auth_service.get_by_email(session, u["email"])
+            existing = auth_service.get_by_email(session, email=u["email"])
             if not existing:
                 user = auth_service.create_user(
                     session,
@@ -48,18 +48,19 @@ def seed():
 
         # Mark seed users as verified so dev login works
         admin = users["admin@example.com"]
+        admin.is_superuser = True
         if not admin.is_verified:
             admin.is_verified = True
-            session.add(admin)
-            session.commit()
-            session.refresh(admin)
+        session.add(admin)
+        session.commit()
+        session.refresh(admin)
 
         member = users["member@example.com"]
         if not member.is_verified:
             member.is_verified = True
-            session.add(member)
-            session.commit()
-            session.refresh(member)
+        session.add(member)
+        session.commit()
+        session.refresh(member)
 
         # Create org
 

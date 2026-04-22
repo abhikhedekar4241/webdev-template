@@ -1,6 +1,6 @@
 import re
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import factory
 
@@ -19,7 +19,7 @@ class OrgFactory(factory.Factory):
     )
     created_by = factory.LazyFunction(uuid.uuid4)
     deleted_at = None
-    created_at = factory.LazyFunction(datetime.utcnow)
+    created_at = factory.LazyFunction(lambda: datetime.now(UTC))
 
 
 class MembershipFactory(factory.Factory):
@@ -30,7 +30,7 @@ class MembershipFactory(factory.Factory):
     org_id = factory.LazyFunction(uuid.uuid4)
     user_id = factory.LazyFunction(uuid.uuid4)
     role = OrgRole.member
-    joined_at = factory.LazyFunction(datetime.utcnow)
+    joined_at = factory.LazyFunction(lambda: datetime.now(UTC))
 
 
 class InvitationFactory(factory.Factory):
@@ -43,5 +43,5 @@ class InvitationFactory(factory.Factory):
     role = OrgRole.member
     invited_by = factory.LazyFunction(uuid.uuid4)
     status = InvitationStatus.pending
-    expires_at = factory.LazyFunction(lambda: datetime.utcnow() + timedelta(days=7))
-    created_at = factory.LazyFunction(datetime.utcnow)
+    expires_at = factory.LazyFunction(lambda: datetime.now(UTC) + timedelta(days=7))
+    created_at = factory.LazyFunction(lambda: datetime.now(UTC))

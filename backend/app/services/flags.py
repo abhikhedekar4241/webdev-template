@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -55,18 +55,16 @@ class FlagsService:
 
         if existing:
             existing.enabled = enabled
-            existing.updated_at = datetime.utcnow()
+            existing.updated_at = datetime.now(UTC)
             session.add(existing)
-            session.commit()
-            session.refresh(existing)
+            session.flush()
             return existing
 
         override = FeatureFlagOverride(
             org_id=org_id, flag_name=flag_name, enabled=enabled
         )
         session.add(override)
-        session.commit()
-        session.refresh(override)
+        session.flush()
         return override
 
     def list_defaults(self) -> dict[str, bool]:

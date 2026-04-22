@@ -10,9 +10,9 @@ export const ROUTES = {
   orgs: {
     list: "/orgs",
     new: "/orgs/new",
-    detail: (orgId: string) => `/orgs/${orgId}`,
-    members: (orgId: string) => `/orgs/${orgId}/members`,
-    settings: (orgId: string) => `/orgs/${orgId}/settings`,
+    detail: (slug: string) => `/orgs/${slug}`,
+    members: (slug: string) => `/orgs/${slug}/members`,
+    settings: (slug: string) => `/orgs/${slug}/settings`,
   },
-  invitations: "/invitations",
+  invitations: "/notifications",
 } as const;

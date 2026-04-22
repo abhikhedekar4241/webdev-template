@@ -48,7 +48,7 @@ export default function LoginPage() {
         <div className="relative z-10">
           <blockquote className="space-y-2">
             <p className="text-xl font-medium leading-relaxed text-white/90">
-              "The scaffolding that lets you ship your idea, not someone else's infrastructure."
+              &ldquo;The scaffolding that lets you ship your idea, not someone else&apos;s infrastructure.&rdquo;
             </p>
           </blockquote>
         </div>

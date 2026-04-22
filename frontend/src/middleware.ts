@@ -8,6 +8,7 @@ const PUBLIC_PATHS = [
   "/auth/reset-password",
   "/auth/verify-email",
   "/auth/callback",
+  "/onboarding",
 ];
 
 export function middleware(request: NextRequest) {
@@ -26,8 +27,8 @@ export function middleware(request: NextRequest) {
   }
 
   // Authenticated user hitting any auth page → redirect to dashboard
-  // (except /auth/callback which processes the OAuth token handoff)
-  if (token && isPublicPath && pathname !== "/auth/callback") {
+  // (except /auth/callback and /onboarding which handle specialized flows)
+  if (token && isPublicPath && pathname !== "/auth/callback" && pathname !== "/onboarding") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

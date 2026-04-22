@@ -1,35 +1,19 @@
 import uuid
-from datetime import datetime
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 from sqlmodel import Session
 
 from app.api.deps import get_current_user
 from app.core.db import get_session
 from app.models.org import OrgRole
 from app.models.user import User
+from app.schemas.api_keys import ApiKeyCreate, ApiKeyCreated, ApiKeyResponse
 from app.services.api_keys import api_key_service
 from app.services.orgs import org_service
 
 router = APIRouter(prefix="/api/v1/orgs", tags=["api-keys"])
-
-
-class ApiKeyCreate(BaseModel):
-    name: str
-
-
-class ApiKeyResponse(BaseModel):
-    id: uuid.UUID
-    name: str
-    key_prefix: str
-    created_at: datetime
-    last_used_at: datetime | None
-    expires_at: datetime | None
-
-
-class ApiKeyCreated(ApiKeyResponse):
-    key: str  # full raw key — shown only once at creation time
+logger = structlog.get_logger()
 
 
 def _require_owner_or_admin(session: Session, org_id: uuid.UUID, user: User) -> None:
@@ -49,6 +33,9 @@ def create_api_key(
     record, raw_key = api_key_service.create(
         session, org_id=org_id, name=body.name, created_by=current_user.id
     )
+    session.commit()
+    session.refresh(record)
+
     return ApiKeyCreated(
         id=record.id,
         name=record.name,
@@ -71,7 +58,8 @@ def list_api_keys(
     )
     if not membership:
         raise HTTPException(status_code=403, detail="Not a member of this organization")
-    return api_key_service.list_for_org(session, org_id=org_id)  # type: ignore[return-value]
+    keys = api_key_service.list_for_org(session, org_id=org_id)
+    return [ApiKeyResponse.model_validate(k) for k in keys]
 
 
 @router.delete("/{org_id}/api-keys/{key_id}", status_code=204)
@@ -85,3 +73,4 @@ def revoke_api_key(
     revoked = api_key_service.revoke(session, key_id=key_id, org_id=org_id)
     if not revoked:
         raise HTTPException(status_code=404, detail="API key not found")
+    session.commit()

@@ -25,7 +25,7 @@ def log_event(
             extra=metadata or {},
         )
         session.add(entry)
-        session.commit()
+        session.flush()
         logger.info("audit_event", audit_event=event, user_id=str(user_id), org_id=str(org_id))
     except Exception as exc:
         logger.error("audit_log_failed", audit_event=event, error=str(exc))

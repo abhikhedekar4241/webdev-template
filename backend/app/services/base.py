@@ -1,7 +1,9 @@
 from typing import Any, Generic, TypeVar
 
+import structlog
 from sqlmodel import Session, SQLModel, select
 
+logger = structlog.get_logger()
 ModelType = TypeVar("ModelType", bound=SQLModel)
 
 
@@ -20,8 +22,8 @@ class CRUDBase(Generic[ModelType]):
     def create(self, session: Session, *, obj_in: SQLModel) -> ModelType:
         obj = self.model.model_validate(obj_in)
         session.add(obj)
-        session.commit()
-        session.refresh(obj)
+        session.flush()
+        logger.info("db_obj_created", model=self.model.__name__)
         return obj
 
     def update(
@@ -34,13 +36,14 @@ class CRUDBase(Generic[ModelType]):
         for key, value in update_data.items():
             setattr(db_obj, key, value)
         session.add(db_obj)
-        session.commit()
-        session.refresh(db_obj)
+        session.flush()
+        logger.info("db_obj_updated", model=self.model.__name__)
         return db_obj
 
     def delete(self, session: Session, *, id: Any) -> ModelType | None:
         obj = session.get(self.model, id)
         if obj:
             session.delete(obj)
-            session.commit()
+            session.flush()
+            logger.info("db_obj_deleted", model=self.model.__name__)
         return obj

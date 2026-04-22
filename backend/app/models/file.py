@@ -1,6 +1,7 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
+from sqlalchemy import DateTime
 from sqlmodel import Field, SQLModel
 
 
@@ -14,5 +15,7 @@ class File(SQLModel, table=True):
     storage_key: str  # MinIO object key
     content_type: str
     size_bytes: int
-    deleted_at: datetime | None = Field(default=None)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    deleted_at: datetime | None = Field(sa_type=DateTime(timezone=True), default=None)
+    created_at: datetime = Field(
+        sa_type=DateTime(timezone=True), default_factory=lambda: datetime.now(UTC)
+    )

@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
@@ -22,6 +23,7 @@ import { ROUTES } from "@/constants/routes";
 import { useLogout, useMe } from "@/queries/auth";
 import { useOrg } from "@/hooks/useOrg";
 import { useOrgs } from "@/queries/orgs";
+import { useNotifications } from "@/queries/notifications";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -32,7 +34,6 @@ const navItems = [
 
 const bottomItems = [
   { href: ROUTES.orgs.list, label: "Organizations", icon: Building2 },
-  { href: ROUTES.invitations, label: "Invitations", icon: Mail },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -40,18 +41,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
   const logout = useLogout();
-  const { data: me } = useMe();
+  const { data: me, isLoading } = useMe();
   const { data: orgs } = useOrgs();
+  const { data: notifications } = useNotifications();
   const { activeOrg, setActiveOrg } = useOrg();
+  const router = useRouter();
+
+  const unreadCount = notifications?.filter((n) => !n.read_at).length || 0;
+
+  // Redirect to onboarding if not completed
+  useEffect(() => {
+    if (!isLoading && me && !me.onboarding_completed_at && pathname !== "/onboarding") {
+      router.push("/onboarding");
+    }
+  }, [me, isLoading, pathname, router]);
+
+  // Auto-select first org if none is active
+  useEffect(() => {
+    if (orgs && orgs.length > 0 && !activeOrg) {
+      const first = orgs[0];
+      setActiveOrg({ id: first.id, name: first.name, slug: first.slug });
+    }
+  }, [orgs, activeOrg, setActiveOrg]);
 
   const initials = me?.full_name
     ? me.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
     : "?";
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-border bg-card md:flex">
+      <aside className="hidden w-56 shrink-0 flex-col border-r border-border bg-card md:flex overflow-y-auto">
         {/* Logo */}
         <div className="flex h-14 items-center gap-2.5 border-b border-border px-4">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary shadow-sm">
@@ -174,10 +194,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Right actions */}
           <div className="flex items-center gap-2">
-            <button className="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+            <Link
+              href="/notifications"
+              className="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            >
               <Bell className="h-4 w-4" />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary" />
-            </button>
+              {unreadCount > 0 && (
+                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </Link>
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
               {initials}
             </div>

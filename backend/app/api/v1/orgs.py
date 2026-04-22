@@ -1,76 +1,25 @@
 import uuid
-from datetime import datetime
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, select
+from sqlmodel import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_org, require_role
 from app.core.db import get_session
-from app.models.org import OrgMembership, OrgRole
+from app.models.org import OrgRole
 from app.models.user import User
+from app.schemas.orgs import (
+    MembershipResponse,
+    OrgCreate,
+    OrgResponse,
+    OrgUpdate,
+    RoleUpdate,
+)
 from app.services.orgs import org_service
 
 router = APIRouter(prefix="/api/v1/orgs", tags=["orgs"])
-
-
-# --- Schemas ---
-
-
-class OrgCreate(BaseModel):
-    name: str
-    slug: str
-
-
-class OrgUpdate(BaseModel):
-    name: str | None = None
-    slug: str | None = None
-
-
-class OrgResponse(BaseModel):
-    id: uuid.UUID
-    name: str
-    slug: str
-    created_by: uuid.UUID
-    created_at: datetime
-
-
-class MembershipResponse(BaseModel):
-    user_id: uuid.UUID
-    email: str
-    full_name: str
-    role: OrgRole
-    joined_at: datetime
-
-
-class RoleUpdate(BaseModel):
-    role: OrgRole
-
-
-# --- Helpers ---
-
-
-def _require_org(session: Session, org_id: uuid.UUID, current_user: User):
-    """Return org if current user is a member, else raise 404."""
-    org = org_service.get_org_for_member(
-        session, org_id=org_id, user_id=current_user.id
-    )
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
-    return org
-
-
-def _require_role(
-    session: Session, org_id: uuid.UUID, user_id: uuid.UUID, allowed: list[OrgRole]
-):
-    membership = org_service.get_membership(session, org_id=org_id, user_id=user_id)
-    if not membership or membership.role not in allowed:
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
-    return membership
-
-
-# --- Endpoints ---
+logger = structlog.get_logger()
 
 
 @router.post("/", response_model=OrgResponse, status_code=201)
@@ -85,10 +34,14 @@ def create_org(
         org = org_service.create_org(
             session, name=body.name, slug=body.slug, created_by=current_user.id
         )
+        session.commit()
+        session.refresh(org)
+        return org
     except IntegrityError:
         session.rollback()
-        raise HTTPException(status_code=409, detail="An organization with this slug already exists")
-    return org
+        raise HTTPException(
+            status_code=409, detail="An organization with this slug already exists"
+        )
 
 
 @router.get("/", response_model=list[OrgResponse])
@@ -99,13 +52,27 @@ def list_orgs(
     return org_service.list_user_orgs(session, user_id=current_user.id)
 
 
+@router.get("/slug/{slug}", response_model=OrgResponse)
+def get_org_by_slug(
+    slug: str,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    org = org_service.get_org_for_member_by_slug(
+        session, slug=slug, user_id=current_user.id
+    )
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    return org
+
+
 @router.get("/{org_id}", response_model=OrgResponse)
 def get_org(
     org_id: uuid.UUID,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    return _require_org(session, org_id, current_user)
+    return require_org(session, org_id, current_user.id)
 
 
 @router.patch("/{org_id}", response_model=OrgResponse)
@@ -115,13 +82,20 @@ def update_org(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    org = _require_org(session, org_id, current_user)
-    _require_role(session, org_id, current_user.id, [OrgRole.owner, OrgRole.admin])
+    org = require_org(session, org_id, current_user.id)
+    require_role(session, org_id, current_user.id, [OrgRole.owner, OrgRole.admin])
     try:
-        return org_service.update_org(session, org=org, name=body.name, slug=body.slug)
+        updated = org_service.update_org(
+            session, org=org, name=body.name, slug=body.slug
+        )
+        session.commit()
+        session.refresh(updated)
+        return updated
     except IntegrityError:
         session.rollback()
-        raise HTTPException(status_code=409, detail="An organization with this slug already exists")
+        raise HTTPException(
+            status_code=409, detail="An organization with this slug already exists"
+        )
 
 
 @router.delete("/{org_id}", status_code=204)
@@ -130,9 +104,10 @@ def delete_org(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    org = _require_org(session, org_id, current_user)
-    _require_role(session, org_id, current_user.id, [OrgRole.owner])
+    org = require_org(session, org_id, current_user.id)
+    require_role(session, org_id, current_user.id, [OrgRole.owner])
     org_service.soft_delete_org(session, org=org)
+    session.commit()
 
 
 @router.get("/{org_id}/members", response_model=list[MembershipResponse])
@@ -141,21 +116,18 @@ def list_members(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    _require_org(session, org_id, current_user)
-    memberships = org_service.list_members(session, org_id=org_id)
-    result = []
-    for m in memberships:
-        user = session.exec(select(User).where(User.id == m.user_id)).first()
-        result.append(
-            MembershipResponse(
-                user_id=m.user_id,
-                email=user.email if user else "",
-                full_name=user.full_name if user else "",
-                role=m.role,
-                joined_at=m.joined_at,
-            )
+    require_org(session, org_id, current_user.id)
+    memberships_with_users = org_service.list_members_with_users(session, org_id=org_id)
+    return [
+        MembershipResponse(
+            user_id=m.user_id,
+            email=u.email,
+            full_name=u.full_name,
+            role=m.role,
+            joined_at=m.joined_at,
         )
-    return result
+        for m, u in memberships_with_users
+    ]
 
 
 @router.patch("/{org_id}/members/{user_id}", response_model=MembershipResponse)
@@ -166,14 +138,18 @@ def change_member_role(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    _require_org(session, org_id, current_user)
-    _require_role(session, org_id, current_user.id, [OrgRole.owner, OrgRole.admin])
+    require_org(session, org_id, current_user.id)
+    require_role(session, org_id, current_user.id, [OrgRole.owner, OrgRole.admin])
     membership = org_service.change_role(
         session, org_id=org_id, user_id=user_id, role=body.role
     )
     if not membership:
         raise HTTPException(status_code=404, detail="Member not found")
-    user = session.exec(select(User).where(User.id == membership.user_id)).first()
+
+    session.commit()
+    session.refresh(membership)
+
+    user = session.get(User, membership.user_id)
     return MembershipResponse(
         user_id=membership.user_id,
         email=user.email if user else "",
@@ -190,9 +166,12 @@ def remove_member(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    _require_org(session, org_id, current_user)
-    _require_role(session, org_id, current_user.id, [OrgRole.owner, OrgRole.admin])
-    target_membership = org_service.get_membership(session, org_id=org_id, user_id=user_id)
+    require_org(session, org_id, current_user.id)
+    require_role(session, org_id, current_user.id, [OrgRole.owner, OrgRole.admin])
+    target_membership = org_service.get_membership(
+        session, org_id=org_id, user_id=user_id
+    )
     if target_membership and target_membership.role == OrgRole.owner:
         raise HTTPException(status_code=403, detail="Cannot remove the org owner")
     org_service.remove_member(session, org_id=org_id, user_id=user_id)
+    session.commit()

@@ -1,12 +1,24 @@
 import structlog
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from app.api.v1 import api_keys, auth, files, flags, health, invitations, orgs
+from app.api.v1 import (
+    admin,
+    api_keys,
+    auth,
+    files,
+    flags,
+    health,
+    invitations,
+    notifications,
+    orgs,
+)
 from app.core.config import settings
+from app.core.exceptions import AppError
 from app.core.middleware import RequestIDMiddleware
 
 structlog.configure(
@@ -29,6 +41,15 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+
+@app.exception_handler(AppError)
+async def app_error_handler(request: Request, exc: AppError):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.message},
+    )
+
+
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(
     CORSMiddleware,
@@ -45,3 +66,5 @@ app.include_router(invitations.router)
 app.include_router(files.router)
 app.include_router(flags.router)
 app.include_router(api_keys.router)
+app.include_router(notifications.router)
+app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])

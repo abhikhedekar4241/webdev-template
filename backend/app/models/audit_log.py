@@ -1,8 +1,9 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
-from sqlmodel import JSON, Column, Field, SQLModel
+from sqlalchemy import Column, DateTime
+from sqlmodel import JSON, Field, SQLModel
 
 
 class AuditLog(SQLModel, table=True):
@@ -13,4 +14,8 @@ class AuditLog(SQLModel, table=True):
     user_id: uuid.UUID | None = Field(default=None, foreign_key="users.id", nullable=True)
     org_id: uuid.UUID | None = Field(default=None, foreign_key="organizations.id", nullable=True)
     extra: dict[str, Any] = Field(default_factory=dict, sa_column=Column("metadata", JSON))
-    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    created_at: datetime = Field(
+        sa_type=DateTime(timezone=True),
+        default_factory=lambda: datetime.now(UTC),
+        index=True,
+    )

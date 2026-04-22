@@ -1,32 +1,19 @@
 import uuid
-from datetime import datetime
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
-from pydantic import BaseModel
 from sqlmodel import Session
 
 from app.api.deps import get_current_user
 from app.core.db import get_session
 from app.models.org import OrgRole
 from app.models.user import User
+from app.schemas.files import FileResponse, PresignedUrlResponse
 from app.services.files import files_service
 from app.services.orgs import org_service
 
 router = APIRouter(prefix="/api/v1/files", tags=["files"])
-
-
-class FileResponse(BaseModel):
-    id: uuid.UUID
-    org_id: uuid.UUID
-    uploaded_by: uuid.UUID
-    filename: str
-    content_type: str
-    size_bytes: int
-    created_at: datetime
-
-
-class PresignedUrlResponse(BaseModel):
-    url: str
+logger = structlog.get_logger()
 
 
 @router.post("/", response_model=FileResponse, status_code=201)
@@ -42,11 +29,24 @@ async def upload_file(
     if not membership:
         raise HTTPException(status_code=403, detail="Not a member of this organization")
 
-    data = await file.read()
+    # Use file.size if available (FastAPI 0.95+), otherwise we might need to seek
+    size = file.size
+    if size is None:
+        # Fallback if size is not populated
+        file.file.seek(0, 2)
+        size = file.file.tell()
+        file.file.seek(0)
+
     storage_key = f"{org_id}/{uuid.uuid4()}/{file.filename}"
     content_type = file.content_type or "application/octet-stream"
 
-    files_service.upload(data=data, storage_key=storage_key, content_type=content_type)
+    # Stream the file directly
+    files_service.upload(
+        data=file.file,
+        length=size,
+        storage_key=storage_key,
+        content_type=content_type
+    )
 
     f = files_service.save_metadata(
         session,
@@ -55,10 +55,13 @@ async def upload_file(
         filename=file.filename or "unnamed",
         storage_key=storage_key,
         content_type=content_type,
-        size_bytes=len(data),
+        size_bytes=size,
     )
 
-    return f
+    session.commit()
+    session.refresh(f)
+
+    return FileResponse.model_validate(f)
 
 
 @router.get("/{file_id}/url", response_model=PresignedUrlResponse)
@@ -78,7 +81,7 @@ def get_file_url(
         raise HTTPException(status_code=403, detail="Not a member of this organization")
 
     url = files_service.presigned_url(f.storage_key)
-    return {"url": url}
+    return PresignedUrlResponse(url=url)
 
 
 @router.delete("/{file_id}", status_code=204)
@@ -104,3 +107,4 @@ def delete_file(
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     files_service.soft_delete(session, file=f)
+    session.commit()

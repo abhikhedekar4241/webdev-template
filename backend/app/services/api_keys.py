@@ -1,7 +1,7 @@
 import hashlib
 import secrets
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlmodel import Session, select
 
@@ -39,8 +39,7 @@ class ApiKeyService(CRUDBase[OrgApiKey]):
             created_by=created_by,
         )
         session.add(record)
-        session.commit()
-        session.refresh(record)
+        session.flush()
         return record, raw_key
 
     def list_for_org(self, session: Session, *, org_id: uuid.UUID) -> list[OrgApiKey]:
@@ -61,9 +60,9 @@ class ApiKeyService(CRUDBase[OrgApiKey]):
             return False
         if key.revoked_at is not None:
             return True  # already revoked — preserve original timestamp
-        key.revoked_at = datetime.utcnow()
+        key.revoked_at = datetime.now(UTC)
         session.add(key)
-        session.commit()
+        session.flush()
         return True
 
     def authenticate(self, session: Session, *, raw_key: str) -> OrgApiKey | None:
@@ -77,11 +76,11 @@ class ApiKeyService(CRUDBase[OrgApiKey]):
             return None
         if key.revoked_at is not None:
             return None
-        if key.expires_at is not None and key.expires_at < datetime.utcnow():
+        if key.expires_at is not None and key.expires_at < datetime.now(UTC):
             return None
-        key.last_used_at = datetime.utcnow()
+        key.last_used_at = datetime.now(UTC)
         session.add(key)
-        session.commit()
+        session.flush()
         return key
 
 

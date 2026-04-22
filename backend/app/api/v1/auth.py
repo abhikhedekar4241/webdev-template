@@ -1,11 +1,13 @@
 import secrets
+from datetime import UTC, datetime
+from typing import Any
 
 import httpx
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr, field_validator
-from sqlmodel import select, Session
+from sqlmodel import Session, select
 
 from app.api.deps import get_current_user
 from app.core.config import settings
@@ -13,47 +15,22 @@ from app.core.db import get_session
 from app.core.security import create_access_token, hash_password
 from app.models.oauth_account import UserOAuthAccount
 from app.models.user import User
+from app.schemas.auth import (
+    OnboardingRequest,
+    RegisterRequest,
+    ResendVerificationRequest,
+    TokenResponse,
+    UserResponse,
+    VerifyEmailRequest,
+)
 from app.services import oauth as oauth_service
 from app.services.auth import auth_service
 from app.services.email import email_service
+from app.services.orgs import org_service
 from app.services.verification import verification_service
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-
-
-class RegisterRequest(BaseModel):
-    email: EmailStr
-    password: str
-    full_name: str
-
-    @field_validator("password")
-    @classmethod
-    def password_min_length(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        return v
-
-
-class VerifyEmailRequest(BaseModel):
-    email: EmailStr
-    otp: str
-
-
-class ResendVerificationRequest(BaseModel):
-    email: EmailStr
-
-
-class UserResponse(BaseModel):
-    id: str
-    email: str
-    full_name: str
-    is_active: bool
-    is_verified: bool
+logger = structlog.get_logger()
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -95,27 +72,23 @@ def register(
         existing.full_name = body.full_name
         existing.hashed_password = hash_password(body.password)
         session.add(existing)
-        session.commit()
-        session.refresh(existing)
         user = existing
     else:
         user = auth_service.create_user(
             session, email=body.email, password=body.password, full_name=body.full_name
         )
+
     otp_record = verification_service.create_otp(session, user_id=user.id)
+    session.commit()
+    session.refresh(user)
+
     email_service.send(
         to=user.email,
         subject="Verify your email",
         template="verify_email",
         context={"full_name": user.full_name, "otp": otp_record.otp},
     )
-    return UserResponse(
-        id=str(user.id),
-        email=user.email,
-        full_name=user.full_name,
-        is_active=user.is_active,
-        is_verified=user.is_verified,
-    )
+    return UserResponse.model_validate(user)
 
 
 @router.post("/verify-email", response_model=TokenResponse)
@@ -131,6 +104,7 @@ def verify_email(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired OTP",
         )
+    session.commit()
     token = create_access_token(str(user.id))
     return TokenResponse(access_token=token)
 
@@ -142,33 +116,62 @@ def resend_verification(
 ) -> dict:
     user = auth_service.get_by_email(session, email=body.email)
     # Always return 200 even if email not found (avoid user enumeration)
-    _RESEND_MSG = "If that email exists and is unverified, a new code was sent"
+    resend_msg = "If that email exists and is unverified, a new code was sent"
     if not user or user.is_verified:
-        return {"message": _RESEND_MSG}
+        return {"message": resend_msg}
     if verification_service.has_recent_otp(session, user_id=user.id):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Please wait 60 seconds before requesting another code",
         )
     otp_record = verification_service.create_otp(session, user_id=user.id)
+    session.commit()
+
     email_service.send(
         to=user.email,
         subject="Verify your email",
         template="verify_email",
         context={"full_name": user.full_name, "otp": otp_record.otp},
     )
-    return {"message": _RESEND_MSG}
+    return {"message": resend_msg}
 
 
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)) -> UserResponse:
-    return UserResponse(
-        id=str(current_user.id),
-        email=current_user.email,
-        full_name=current_user.full_name,
-        is_active=current_user.is_active,
-        is_verified=current_user.is_verified,
-    )
+    return UserResponse.model_validate(current_user)
+
+
+@router.post("/onboarding", response_model=UserResponse)
+def complete_onboarding(
+    body: OnboardingRequest,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    """Complete user onboarding by setting full name and optionally creating first org."""
+    if current_user.onboarding_completed_at:
+        raise HTTPException(status_code=400, detail="Onboarding already completed")
+
+    # Update user profile
+    current_user.full_name = body.full_name
+    current_user.onboarding_completed_at = datetime.now(UTC)
+
+    # Create first organization if provided
+    if body.org_name:
+        slug = body.org_name.lower().replace(" ", "-")
+        # Check if slug exists, if so append random suffix
+        existing_org = org_service.get_by_slug(session, slug=slug)
+        if existing_org:
+            slug = f"{slug}-{secrets.token_hex(3)}"
+
+        org_service.create_org(
+            session, name=body.org_name, slug=slug, created_by=current_user.id
+        )
+
+    session.add(current_user)
+    session.commit()
+    session.refresh(current_user)
+
+    return UserResponse.model_validate(current_user)
 
 
 @router.get("/google")

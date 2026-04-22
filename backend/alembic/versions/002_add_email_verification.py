@@ -8,6 +8,7 @@ Create Date: 2026-04-21 12:00:00.000000
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
 from alembic import op
 
 revision = "002_add_email_verification"

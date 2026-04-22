@@ -21,6 +21,7 @@ export function useAcceptInvitation() {
     mutationFn: (invId: string) => invitationsService.accept(invId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.invitations.list });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.orgs.list });
       toast.success("Invitation accepted! You are now a member.");
     },
@@ -37,6 +38,7 @@ export function useDeclineInvitation() {
     mutationFn: (invId: string) => invitationsService.decline(invId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.invitations.list });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
       toast.success("Invitation declined");
     },
     onError: () => {

@@ -2,10 +2,11 @@ import functools
 import hashlib
 import json
 import pickle
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
-import structlog
 import redis as redis_lib
+import structlog
 
 from app.core.config import settings
 

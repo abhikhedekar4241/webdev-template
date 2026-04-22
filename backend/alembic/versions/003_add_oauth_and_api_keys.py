@@ -8,6 +8,7 @@ Create Date: 2026-04-22
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
 from alembic import op
 
 revision = "003_add_oauth_and_api_keys"

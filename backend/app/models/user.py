@@ -1,17 +1,21 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
-from sqlmodel import Field, SQLModel
+from sqlalchemy import DateTime
+from sqlmodel import Field
+from app.models.base import SoftDeleteMixin, TimestampMixin, UUIDModel
 
 
-class User(SQLModel, table=True):
+class User(UUIDModel, TimestampMixin, SoftDeleteMixin, table=True):
     __tablename__ = "users"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     email: str = Field(unique=True, index=True)
     hashed_password: str | None = Field(default=None)
     full_name: str
     is_active: bool = Field(default=True)
     is_verified: bool = Field(default=False)
-    deleted_at: datetime | None = Field(default=None)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    is_superuser: bool = Field(default=False)
+    onboarding_completed_at: datetime | None = Field(
+        sa_type=DateTime(timezone=True), default=None
+    )
+

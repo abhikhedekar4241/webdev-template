@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Building2, ChevronRight } from "lucide-react";
+import { Plus, Building2, ChevronRight, Mail } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 import { useOrgs } from "@/queries/orgs";
+import { useInvitations } from "@/queries/invitations";
+import { InvitationCard } from "@/components/shared/InvitationCard";
 
 function OrgAvatar({ name }: { name: string }) {
   const initials = name
@@ -32,12 +34,15 @@ function OrgAvatar({ name }: { name: string }) {
 }
 
 export default function OrgsPage() {
-  const { data: orgs, isLoading } = useOrgs();
+  const { data: orgs, isLoading: orgsLoading } = useOrgs();
+  const { data: invitations, isLoading: invsLoading } = useInvitations();
+
+  const isLoading = orgsLoading || invsLoading;
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
+    <div className="mx-auto max-w-3xl px-6 py-8 space-y-8">
       {/* Header */}
-      <div className="mb-8 flex items-start justify-between">
+      <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold">Organizations</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -52,6 +57,21 @@ export default function OrgsPage() {
           New organization
         </Link>
       </div>
+
+      {/* Pending Invitations */}
+      {!isLoading && invitations && invitations.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-primary">
+            <Mail className="h-4 w-4" />
+            <h2 className="text-sm font-bold uppercase tracking-wider">Pending Invitations</h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {invitations.map((inv) => (
+              <InvitationCard key={inv.id} invitation={inv} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Loading */}
       {isLoading && (
@@ -84,23 +104,29 @@ export default function OrgsPage() {
 
       {/* Org list */}
       {!isLoading && orgs && orgs.length > 0 && (
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-          {orgs.map((org, i) => (
-            <Link
-              key={org.id}
-              href={ROUTES.orgs.detail(org.id)}
-              className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-muted/50 ${
-                i > 0 ? "border-t border-border" : ""
-              }`}
-            >
-              <OrgAvatar name={org.name} />
-              <div className="flex-1 min-w-0">
-                <p className="truncate font-semibold">{org.name}</p>
-                <p className="truncate text-sm text-muted-foreground">/{org.slug}</p>
-              </div>
-              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-            </Link>
-          ))}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Building2 className="h-4 w-4" />
+            <h2 className="text-sm font-bold uppercase tracking-wider">Your Workspaces</h2>
+          </div>
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            {orgs.map((org, i) => (
+              <Link
+                key={org.id}
+                href={ROUTES.orgs.detail(org.slug)}
+                className={`flex items-center gap-4 px-5 py-4 transition-colors hover:bg-muted/50 ${
+                  i > 0 ? "border-t border-border" : ""
+                }`}
+              >
+                <OrgAvatar name={org.name} />
+                <div className="flex-1 min-w-0">
+                  <p className="truncate font-semibold">{org.name}</p>
+                  <p className="truncate text-sm text-muted-foreground">/{org.slug}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </Link>
+            ))}
+          </div>
         </div>
       )}
     </div>

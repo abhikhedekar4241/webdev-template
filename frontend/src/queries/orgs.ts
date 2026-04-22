@@ -25,6 +25,14 @@ export function useOrg(orgId: string) {
   });
 }
 
+export function useOrgBySlug(slug: string) {
+  return useQuery({
+    queryKey: ["orgs", "slug", slug],
+    queryFn: () => orgsService.getBySlug(slug),
+    enabled: !!slug,
+  });
+}
+
 export function useCreateOrg() {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -37,7 +45,7 @@ export function useCreateOrg() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.orgs.list });
       setActiveOrg({ id: org.id, name: org.name, slug: org.slug });
       toast.success("Organization created");
-      router.push(ROUTES.orgs.detail(org.id));
+      router.push(ROUTES.orgs.detail(org.slug));
     },
     onError: (err) => {
       toast.error(getApiError(err, "Failed to create organization"));

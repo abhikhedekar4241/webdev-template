@@ -49,3 +49,13 @@ reset-db:
 	@sleep 3
 	$(MAKE) migrate
 	$(MAKE) seed
+
+# Deployment
+deploy:
+	kamal deploy
+
+deploy-setup:
+	kamal setup
+
+deploy-rollback:
+	kamal rollback

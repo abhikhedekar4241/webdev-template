@@ -1,7 +1,8 @@
 import enum
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
+from sqlalchemy import DateTime
 from sqlmodel import Field, SQLModel
 
 from app.models.org import OrgRole
@@ -22,5 +23,7 @@ class OrgInvitation(SQLModel, table=True):
     role: OrgRole = Field(default=OrgRole.member)
     invited_by: uuid.UUID = Field(foreign_key="users.id")
     status: InvitationStatus = Field(default=InvitationStatus.pending)
-    expires_at: datetime
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    expires_at: datetime = Field(sa_type=DateTime(timezone=True))
+    created_at: datetime = Field(
+        sa_type=DateTime(timezone=True), default_factory=lambda: datetime.now(UTC)
+    )
