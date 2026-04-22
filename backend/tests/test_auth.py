@@ -17,13 +17,36 @@ def test_register_valid_password_succeeds(client: TestClient):
     assert resp.status_code == 201
 
 
-def test_register_duplicate_email_returns_409(client: TestClient):
+def test_register_unverified_email_can_be_reclaimed(client: TestClient):
+    # First registration — email reserved but unverified
     client.post(
         "/api/v1/auth/register",
-        json={"email": "dup@example.com", "password": "password123", "full_name": "User"},
+        json={"email": "dup@example.com", "password": "password123", "full_name": "First"},
     )
+    # Second registration with same unverified email should succeed (not 409)
     resp = client.post(
         "/api/v1/auth/register",
-        json={"email": "dup@example.com", "password": "password123", "full_name": "User"},
+        json={"email": "dup@example.com", "password": "newpassword", "full_name": "Second"},
+    )
+    assert resp.status_code == 201
+
+
+def test_register_verified_email_returns_409(client: TestClient, session):
+    from app.models.user import User
+    from app.core.security import hash_password
+
+    # Insert a verified user directly
+    user = User(
+        email="taken@example.com",
+        hashed_password=hash_password("password123"),
+        full_name="Verified User",
+        is_verified=True,
+    )
+    session.add(user)
+    session.commit()
+
+    resp = client.post(
+        "/api/v1/auth/register",
+        json={"email": "taken@example.com", "password": "password123", "full_name": "Attacker"},
     )
     assert resp.status_code == 409

@@ -10,7 +10,7 @@ from sqlmodel import select, Session
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.db import get_session
-from app.core.security import create_access_token
+from app.core.security import create_access_token, hash_password
 from app.models.oauth_account import UserOAuthAccount
 from app.models.user import User
 from app.services import oauth as oauth_service
@@ -85,13 +85,23 @@ def register(
 ) -> UserResponse:
     existing = auth_service.get_by_email(session, email=body.email)
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered",
+        if existing.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email already registered",
+            )
+        # Unverified — overwrite the pending registration so the real
+        # owner can always claim their address.
+        existing.full_name = body.full_name
+        existing.hashed_password = hash_password(body.password)
+        session.add(existing)
+        session.commit()
+        session.refresh(existing)
+        user = existing
+    else:
+        user = auth_service.create_user(
+            session, email=body.email, password=body.password, full_name=body.full_name
         )
-    user = auth_service.create_user(
-        session, email=body.email, password=body.password, full_name=body.full_name
-    )
     otp_record = verification_service.create_otp(session, user_id=user.id)
     email_service.send(
         to=user.email,
