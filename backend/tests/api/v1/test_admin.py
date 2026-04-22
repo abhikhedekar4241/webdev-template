@@ -39,3 +39,15 @@ async def test_impersonate_user(client: TestClient, superuser: User, alice: User
     )
     assert me_response.status_code == 200
     assert me_response.json()["email"] == alice.email
+
+
+async def test_list_users(client: TestClient, superuser: User, alice: User):
+    response = await client.get(
+        "/api/v1/admin/users", headers=get_auth_header(superuser.id)
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "items" in data
+    assert "total" in data
+    assert any(u["email"] == alice.email for u in data["items"])
+    assert any(u["email"] == superuser.email for u in data["items"])

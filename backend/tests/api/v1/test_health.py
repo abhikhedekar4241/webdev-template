@@ -1,43 +1,42 @@
-async def test_health_returns_ok(client):
-    response = await client.get("/health")
+import pytest
+from httpx import AsyncClient
+
+async def test_health_returns_ok(client: AsyncClient):
+    response = await client.get("/api/v1/health")
     assert response.status_code == 200
 
 
-async def test_health_body_has_status_ok(client):
-    response = await client.get("/health")
+async def test_health_body_has_status_ok(client: AsyncClient):
+    response = await client.get("/api/v1/health")
     data = response.json()
     assert data["status"] == "ok"
 
 
-async def test_health_body_has_db_ok(client):
-    response = await client.get("/health")
+async def test_health_body_has_db_ok(client: AsyncClient):
+    response = await client.get("/api/v1/health")
     data = response.json()
     assert data["db"] == "ok"
 
 
-async def test_health_has_request_id_header(client):
-    response = await client.get("/health")
+async def test_health_has_request_id_header(client: AsyncClient):
+    response = await client.get("/api/v1/health")
     assert "x-request-id" in response.headers
 
 
-async def test_health_returns_503_when_db_fails():
-    from unittest.mock import MagicMock
-
-    from fastapi.testclient import TestClient
-    from sqlmodel import Session
-
+async def test_health_returns_503_when_db_fails(client: AsyncClient):
+    from unittest.mock import AsyncMock
+    from sqlmodel.ext.asyncio.session import AsyncSession
     from app.core.db import get_session
     from app.main import app as fastapi_app
 
-    def broken_session():
-        mock = MagicMock(spec=Session)
+    async def broken_session():
+        mock = AsyncMock(spec=AsyncSession)
         mock.exec.side_effect = Exception("DB unreachable")
         yield mock
 
     fastapi_app.dependency_overrides[get_session] = broken_session
     try:
-        client = TestClient(fastapi_app, raise_server_exceptions=False)
-        response = client.get("/health")
+        response = await client.get("/api/v1/health")
         assert response.status_code == 503
         data = response.json()
         assert data["status"] == "degraded"
