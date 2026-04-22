@@ -195,7 +195,7 @@ def google_callback(
 
     stored_state = request.cookies.get("oauth_state")
     if not stored_state or stored_state != state:
-        raise HTTPException(status_code=400, detail="Invalid OAuth state")
+        return _error_redirect
 
     redirect_uri = f"{settings.BACKEND_URL}/api/v1/auth/google/callback"
     try:

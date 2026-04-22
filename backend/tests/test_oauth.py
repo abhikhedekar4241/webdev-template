@@ -20,14 +20,15 @@ def test_google_login_not_configured_returns_501(client: TestClient):
     assert resp.status_code == 501
 
 
-def test_google_callback_invalid_state_returns_400(client: TestClient):
+def test_google_callback_invalid_state_redirects_to_error(client: TestClient):
     client.cookies.set("oauth_state", "correct")
     resp = client.get(
         "/api/v1/auth/google/callback",
         params={"code": "abc", "state": "wrong"},
         follow_redirects=False,
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 307
+    assert "error=oauth_failed" in resp.headers["location"]
 
 
 def test_google_callback_missing_code_redirects_to_error(client: TestClient):
