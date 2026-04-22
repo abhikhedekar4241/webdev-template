@@ -35,7 +35,8 @@ api.interceptors.response.use(
  */
 export function setToken(token: string): void {
   localStorage.setItem("access_token", token);
-  document.cookie = `access_token=${token}; path=/; SameSite=Lax`;
+  const secure = typeof location !== "undefined" && location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `access_token=${token}; path=/; SameSite=Lax${secure}`;
 }
 
 /**
