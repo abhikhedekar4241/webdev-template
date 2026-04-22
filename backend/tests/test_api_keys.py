@@ -31,7 +31,7 @@ def test_create_returns_record_and_raw_key(session, owner_and_org):
         session, org_id=org.id, name="CI key", created_by=user.id
     )
     assert raw_key.startswith("sk_live_")
-    assert len(raw_key) == 74  # "sk_live_" (8) + token_hex(33) = 66 hex chars
+    assert len(raw_key) == 74  # "sk_live_" (8) + token_hex(33) produces 66 hex chars = 74 total
     assert record.key_prefix == raw_key[:10]
     assert record.key_hash == _hash_key(raw_key)
     assert record.revoked_at is None
@@ -171,3 +171,13 @@ def test_revoke_nonexistent_key_returns_404(client: TestClient, session, owner_a
         headers=_auth(user.id),
     )
     assert resp.status_code == 404
+
+
+def test_revoke_already_revoked_key_returns_204(client: TestClient, session, owner_and_org):
+    user, org = owner_and_org
+    record, _ = api_key_service.create(session, org_id=org.id, name="Key", created_by=user.id)
+    api_key_service.revoke(session, key_id=record.id, org_id=org.id)
+    resp = client.delete(
+        f"/api/v1/orgs/{org.id}/api-keys/{record.id}", headers=_auth(user.id)
+    )
+    assert resp.status_code == 204
