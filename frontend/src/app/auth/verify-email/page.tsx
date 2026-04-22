@@ -14,16 +14,11 @@ export default function VerifyEmailPage() {
 
   const [digits, setDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [error, setError] = useState("");
-  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendCooldown, setResendCooldown] = useState(60);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const verify = useVerifyEmail();
   const resend = useResendVerification();
-
-  // Start a 60s cooldown on mount (OTP just sent during register)
-  useEffect(() => {
-    setResendCooldown(60);
-  }, []);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
