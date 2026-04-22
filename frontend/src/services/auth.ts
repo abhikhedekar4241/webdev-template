@@ -5,6 +5,7 @@ export interface UserData {
   email: string;
   full_name: string;
   is_active: boolean;
+  is_verified: boolean;
 }
 
 export const authService = {
@@ -26,6 +27,19 @@ export const authService = {
       full_name: fullName,
     });
     return data;
+  },
+
+  async verifyEmail(email: string, otp: string): Promise<string> {
+    const { data } = await api.post<{ access_token: string }>("/api/v1/auth/verify-email", {
+      email,
+      otp,
+    });
+    setToken(data.access_token);
+    return data.access_token;
+  },
+
+  async resendVerification(email: string): Promise<void> {
+    await api.post("/api/v1/auth/resend-verification", { email });
   },
 
   async me(): Promise<UserData> {

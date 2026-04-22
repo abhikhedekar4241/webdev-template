@@ -49,6 +49,35 @@ export function useRegister() {
   });
 }
 
+export function useVerifyEmail() {
+  const queryClient = useQueryClient();
+  const { activeOrg, setActiveOrg } = useOrgStore();
+  return useMutation({
+    mutationFn: ({ email, otp }: { email: string; otp: string }) =>
+      authService.verifyEmail(email, otp),
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+      if (!activeOrg) {
+        try {
+          const orgs = await orgsService.list();
+          if (orgs.length > 0) {
+            const first = orgs[0];
+            setActiveOrg({ id: first.id, name: first.name, slug: first.slug });
+          }
+        } catch {
+          // ignore
+        }
+      }
+    },
+  });
+}
+
+export function useResendVerification() {
+  return useMutation({
+    mutationFn: (email: string) => authService.resendVerification(email),
+  });
+}
+
 export function useLogout() {
   const queryClient = useQueryClient();
   const router = useRouter();
