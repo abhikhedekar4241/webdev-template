@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     # Frontend
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # Google OAuth (optional — endpoints return 501 if not configured)
+    GOOGLE_CLIENT_ID: str | None = None
+    GOOGLE_CLIENT_SECRET: str | None = None
+
+    # Backend base URL (used to build OAuth redirect URIs)
+    BACKEND_URL: str = "http://localhost:8000"
+
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost"]
 

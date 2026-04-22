@@ -1,12 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import secrets
+
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, field_validator
-from sqlmodel import Session
+from sqlmodel import select, Session
 
 from app.api.deps import get_current_user
+from app.core.config import settings
 from app.core.db import get_session
 from app.core.security import create_access_token
+from app.models.oauth_account import UserOAuthAccount
 from app.models.user import User
+from app.services import oauth as oauth_service
 from app.services.auth import auth_service
 from app.services.email import email_service
 from app.services.verification import verification_service
@@ -152,3 +159,102 @@ def get_me(current_user: User = Depends(get_current_user)) -> UserResponse:
         is_active=current_user.is_active,
         is_verified=current_user.is_verified,
     )
+
+
+@router.get("/google")
+def google_login(request: Request) -> RedirectResponse:
+    if not settings.GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=501, detail="Google OAuth is not configured"
+        )
+    state = secrets.token_hex(16)
+    redirect_uri = f"{settings.BACKEND_URL}/api/v1/auth/google/callback"
+    url = oauth_service.google_auth_url(redirect_uri, state)
+    response = RedirectResponse(url)
+    response.set_cookie(
+        "oauth_state", state, max_age=600, httponly=True, samesite="lax"
+    )
+    return response
+
+
+@router.get("/google/callback")
+def google_callback(
+    request: Request,
+    session: Session = Depends(get_session),
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+) -> RedirectResponse:
+    _error_redirect = RedirectResponse(
+        f"{settings.FRONTEND_URL}/auth/login?error=oauth_failed"
+    )
+
+    if error or not code or not state:
+        return _error_redirect
+
+    stored_state = request.cookies.get("oauth_state")
+    if not stored_state or stored_state != state:
+        raise HTTPException(status_code=400, detail="Invalid OAuth state")
+
+    redirect_uri = f"{settings.BACKEND_URL}/api/v1/auth/google/callback"
+    try:
+        token_data = oauth_service.exchange_code(code, redirect_uri)
+        user_info = oauth_service.get_google_user_info(token_data["access_token"])
+    except httpx.HTTPError:
+        return _error_redirect
+
+    google_sub: str = user_info["sub"]
+    google_email: str = user_info["email"]
+    google_name: str = user_info.get("name", google_email)
+
+    # 1. Existing OAuth account → log in directly
+    existing_oauth = session.exec(
+        select(UserOAuthAccount).where(
+            UserOAuthAccount.provider == "google",
+            UserOAuthAccount.provider_user_id == google_sub,
+        )
+    ).first()
+
+    if existing_oauth:
+        user = session.get(User, existing_oauth.user_id)
+    else:
+        # 2. Existing email → auto-link
+        user = auth_service.get_by_email(session, email=google_email)
+        if user:
+            oauth_account = UserOAuthAccount(
+                user_id=user.id,
+                provider="google",
+                provider_user_id=google_sub,
+                provider_email=google_email,
+            )
+            if not user.is_verified:
+                user.is_verified = True
+                session.add(user)
+            session.add(oauth_account)
+            session.commit()
+        else:
+            # 3. New user
+            user = User(
+                email=google_email,
+                full_name=google_name,
+                is_verified=True,
+            )
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+            oauth_account = UserOAuthAccount(
+                user_id=user.id,
+                provider="google",
+                provider_user_id=google_sub,
+                provider_email=google_email,
+            )
+            session.add(oauth_account)
+            session.commit()
+
+    if not user:
+        return _error_redirect
+
+    jwt = create_access_token(str(user.id))
+    response = RedirectResponse(f"{settings.FRONTEND_URL}/auth/callback?token={jwt}")
+    response.delete_cookie("oauth_state")
+    return response
