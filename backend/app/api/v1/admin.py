@@ -19,7 +19,7 @@ from app.schemas.admin import (
 )
 from app.utils.query import apply_pagination_sorting_filtering
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 
 
 @router.get("/stats", response_model=SystemStats)
@@ -50,7 +50,7 @@ async def list_users(
     current_superuser: User = Depends(get_current_superuser),
 ):
     """List all users in the system."""
-    return apply_pagination_sorting_filtering(
+    return await apply_pagination_sorting_filtering(
         session=session,
         model=User,
         skip=skip,
@@ -73,7 +73,7 @@ async def list_organizations(
     current_superuser: User = Depends(get_current_superuser),
 ):
     """List all organizations in the system."""
-    return apply_pagination_sorting_filtering(
+    return await apply_pagination_sorting_filtering(
         session=session,
         model=Organization,
         skip=skip,

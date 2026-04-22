@@ -54,7 +54,8 @@ async def apply_pagination_sorting_filtering(
                 query = query.order_by(col.asc())
 
     # Total count before pagination
-    total = (await session.exec(select(func.count()).select_from(query.subquery()))).one()
+    count_query = select(func.count()).select_from(query.subquery())
+    total = (await session.exec(count_query)).one()
 
     # Pagination
     items = (await session.exec(query.offset(skip).limit(limit))).all()
