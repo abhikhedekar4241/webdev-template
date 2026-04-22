@@ -1,10 +1,12 @@
 import { components } from "@/types/api";
 import api from "./api";
 
-type SystemStats = components["schemas"]["SystemStats"];
-type UserListResponse = components["schemas"]["UserListResponse"];
-type OrgListResponse = components["schemas"]["OrgListResponse"];
-type ImpersonateResponse = components["schemas"]["ImpersonateResponse"];
+export type SystemStats = components["schemas"]["SystemStats"];
+export type UserListResponse = components["schemas"]["UserListResponse"];
+export type OrgListResponse = components["schemas"]["OrgListResponse"];
+export type ImpersonateResponse = components["schemas"]["ImpersonateResponse"];
+export type AdminUser = UserListResponse["items"][number];
+export type AdminOrg = OrgListResponse["items"][number];
 
 export const adminService = {
   getStats: () => api.get<SystemStats>("/api/v1/admin/stats"),

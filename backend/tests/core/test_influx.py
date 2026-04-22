@@ -11,12 +11,12 @@ def reset_influx():
     app.core.influx._client = None
     app.core.influx._write_api = None
 
-def test_get_write_api_no_token():
+async def test_get_write_api_no_token():
     with patch("app.core.influx.settings") as mock_settings:
         mock_settings.INFLUXDB_TOKEN = None
-        assert get_write_api() is None
+        assert await get_write_api() is None
 
-def test_get_write_api_success():
+async def test_get_write_api_success():
     with patch("app.core.influx.settings") as mock_settings:
         mock_settings.INFLUXDB_TOKEN = "token"
         mock_settings.INFLUXDB_URL = "http://localhost:8086"
@@ -29,9 +29,9 @@ def test_get_write_api_success():
             mock_client.write_api.return_value = mock_write_api
             
             # First call
-            assert get_write_api() == mock_write_api
+            assert await get_write_api() == mock_write_api
             mock_client_class.assert_called_once()
             
             # Second call (memoized)
-            assert get_write_api() == mock_write_api
+            assert await get_write_api() == mock_write_api
             assert mock_client_class.call_count == 1

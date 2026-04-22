@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -14,8 +14,8 @@ def auth_header(user_id: uuid.UUID) -> dict:
 
 
 @pytest.fixture
-def unverified_user(session):
-    return auth_service.create_user(
+async def unverified_user(session):
+    return await auth_service.create_user(
         session,
         email="unverified@example.com",
         password="password123",
@@ -23,91 +23,91 @@ def unverified_user(session):
     )
 
 
-def test_generate_otp_is_6_digits(session, unverified_user):
-    otp_record = verification_service.create_otp(session, user_id=unverified_user.id)
+async def test_generate_otp_is_6_digits(session, unverified_user):
+    otp_record = await verification_service.create_otp(session, user_id=unverified_user.id)
     assert len(otp_record.otp) == 6
     assert otp_record.otp.isdigit()
 
 
-def test_otp_expires_in_10_minutes(session, unverified_user):
-    otp_record = verification_service.create_otp(session, user_id=unverified_user.id)
-    delta = otp_record.expires_at - datetime.now(UTC)
+async def test_otp_expires_in_10_minutes(session, unverified_user):
+    otp_record = await verification_service.create_otp(session, user_id=unverified_user.id)
+    delta = otp_record.expires_at.replace(tzinfo=timezone.utc) - datetime.now(timezone.utc)
     assert 590 < delta.total_seconds() < 610
 
 
-def test_verify_otp_marks_user_verified(session, unverified_user):
-    otp_record = verification_service.create_otp(session, user_id=unverified_user.id)
-    result = verification_service.verify_otp(
+async def test_verify_otp_marks_user_verified(session, unverified_user):
+    otp_record = await verification_service.create_otp(session, user_id=unverified_user.id)
+    result = await verification_service.verify_otp(
         session, email=unverified_user.email, otp=otp_record.otp
     )
     assert result is not None
     assert result.is_verified is True
 
 
-def test_verify_otp_marks_record_used(session, unverified_user):
-    otp_record = verification_service.create_otp(session, user_id=unverified_user.id)
-    verification_service.verify_otp(
+async def test_verify_otp_marks_record_used(session, unverified_user):
+    otp_record = await verification_service.create_otp(session, user_id=unverified_user.id)
+    await verification_service.verify_otp(
         session, email=unverified_user.email, otp=otp_record.otp
     )
-    session.refresh(otp_record)
+    await session.refresh(otp_record)
     assert otp_record.used_at is not None
 
 
-def test_verify_wrong_otp_returns_none(session, unverified_user):
-    verification_service.create_otp(session, user_id=unverified_user.id)
-    result = verification_service.verify_otp(
+async def test_verify_wrong_otp_returns_none(session, unverified_user):
+    await verification_service.create_otp(session, user_id=unverified_user.id)
+    result = await verification_service.verify_otp(
         session, email=unverified_user.email, otp="000000"
     )
     assert result is None
 
 
-def test_verify_expired_otp_returns_none(session, unverified_user):
-    otp_record = verification_service.create_otp(session, user_id=unverified_user.id)
-    otp_record.expires_at = datetime.now(UTC) - timedelta(seconds=1)
+async def test_verify_expired_otp_returns_none(session, unverified_user):
+    otp_record = await verification_service.create_otp(session, user_id=unverified_user.id)
+    otp_record.expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
     session.add(otp_record)
-    session.commit()
-    result = verification_service.verify_otp(
+    await session.commit()
+    result = await verification_service.verify_otp(
         session, email=unverified_user.email, otp=otp_record.otp
     )
     assert result is None
 
 
-def test_verify_used_otp_returns_none(session, unverified_user):
-    otp_record = verification_service.create_otp(session, user_id=unverified_user.id)
-    verification_service.verify_otp(
+async def test_verify_used_otp_returns_none(session, unverified_user):
+    otp_record = await verification_service.create_otp(session, user_id=unverified_user.id)
+    await verification_service.verify_otp(
         session, email=unverified_user.email, otp=otp_record.otp
     )
-    session.refresh(unverified_user)
-    result = verification_service.verify_otp(
+    await session.refresh(unverified_user)
+    result = await verification_service.verify_otp(
         session, email=unverified_user.email, otp=otp_record.otp
     )
     assert result is None
 
 
-def test_has_recent_otp_true_within_60s(session, unverified_user):
-    verification_service.create_otp(session, user_id=unverified_user.id)
-    assert verification_service.has_recent_otp(session, user_id=unverified_user.id) is True
+async def test_has_recent_otp_true_within_60s(session, unverified_user):
+    await verification_service.create_otp(session, user_id=unverified_user.id)
+    assert await verification_service.has_recent_otp(session, user_id=unverified_user.id) is True
 
 
-def test_has_recent_otp_false_after_60s(session, unverified_user):
-    otp_record = verification_service.create_otp(session, user_id=unverified_user.id)
-    otp_record.created_at = datetime.now(UTC) - timedelta(seconds=61)
+async def test_has_recent_otp_false_after_60s(session, unverified_user):
+    otp_record = await verification_service.create_otp(session, user_id=unverified_user.id)
+    otp_record.created_at = datetime.now(timezone.utc) - timedelta(seconds=61)
     session.add(otp_record)
-    session.commit()
-    assert verification_service.has_recent_otp(session, user_id=unverified_user.id) is False
+    await session.commit()
+    assert await verification_service.has_recent_otp(session, user_id=unverified_user.id) is False
 
 
 # --- API tests ---
 
 
-def test_login_unverified_returns_403(client: TestClient, session):
-    auth_service.create_user(
+async def test_login_unverified_returns_403(client: TestClient, session):
+    await auth_service.create_user(
         session,
         email="blocked@example.com",
         password="password123",
         full_name="Blocked",
     )
-    resp = client.post(
+    resp = await client.post(
         "/api/v1/auth/login",
         data={"username": "blocked@example.com", "password": "password123"},
     )
@@ -115,8 +115,8 @@ def test_login_unverified_returns_403(client: TestClient, session):
     assert resp.json()["detail"] == "Email not verified"
 
 
-def test_register_creates_unverified_user(client: TestClient):
-    resp = client.post(
+async def test_register_creates_unverified_user(client: TestClient):
+    resp = await client.post(
         "/api/v1/auth/register",
         json={"email": "new@example.com", "password": "password123", "full_name": "New"},
     )
@@ -124,15 +124,15 @@ def test_register_creates_unverified_user(client: TestClient):
     assert resp.json()["is_verified"] is False
 
 
-def test_verify_email_returns_token(client: TestClient, session):
-    user = auth_service.create_user(
+async def test_verify_email_returns_token(client: TestClient, session):
+    user = await auth_service.create_user(
         session,
         email="verify@example.com",
         password="password123",
         full_name="Verify Me",
     )
-    otp_record = verification_service.create_otp(session, user_id=user.id)
-    resp = client.post(
+    otp_record = await verification_service.create_otp(session, user_id=user.id)
+    resp = await client.post(
         "/api/v1/auth/verify-email",
         json={"email": "verify@example.com", "otp": otp_record.otp},
     )
@@ -140,62 +140,62 @@ def test_verify_email_returns_token(client: TestClient, session):
     assert "access_token" in resp.json()
 
 
-def test_verify_email_wrong_otp_returns_400(client: TestClient, session):
-    auth_service.create_user(
+async def test_verify_email_wrong_otp_returns_400(client: TestClient, session):
+    await auth_service.create_user(
         session,
         email="wrongotp@example.com",
         password="password123",
         full_name="Wrong OTP",
     )
-    resp = client.post(
+    resp = await client.post(
         "/api/v1/auth/verify-email",
         json={"email": "wrongotp@example.com", "otp": "999999"},
     )
     assert resp.status_code == 400
 
 
-def test_resend_verification_success(client: TestClient, session):
-    auth_service.create_user(
+async def test_resend_verification_success(client: TestClient, session):
+    await auth_service.create_user(
         session,
         email="resend@example.com",
         password="password123",
         full_name="Resend",
     )
-    resp = client.post(
+    resp = await client.post(
         "/api/v1/auth/resend-verification",
         json={"email": "resend@example.com"},
     )
     assert resp.status_code == 200
 
 
-def test_resend_verification_rate_limit(client: TestClient, session):
-    user = auth_service.create_user(
+async def test_resend_verification_rate_limit(client: TestClient, session):
+    user = await auth_service.create_user(
         session,
         email="ratelimit@example.com",
         password="password123",
         full_name="Rate",
     )
-    verification_service.create_otp(session, user_id=user.id)
-    resp = client.post(
+    await verification_service.create_otp(session, user_id=user.id)
+    resp = await client.post(
         "/api/v1/auth/resend-verification",
         json={"email": "ratelimit@example.com"},
     )
     assert resp.status_code == 429
 
 
-def test_login_after_verification_succeeds(client: TestClient, session):
-    user = auth_service.create_user(
+async def test_login_after_verification_succeeds(client: TestClient, session):
+    user = await auth_service.create_user(
         session,
         email="afterverify@example.com",
         password="password123",
         full_name="After",
     )
-    otp_record = verification_service.create_otp(session, user_id=user.id)
-    client.post(
+    otp_record = await verification_service.create_otp(session, user_id=user.id)
+    await client.post(
         "/api/v1/auth/verify-email",
         json={"email": "afterverify@example.com", "otp": otp_record.otp},
     )
-    resp = client.post(
+    resp = await client.post(
         "/api/v1/auth/login",
         data={"username": "afterverify@example.com", "password": "password123"},
     )

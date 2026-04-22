@@ -2,15 +2,15 @@ import uuid
 from typing import Any
 
 import structlog
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.audit_log import AuditLog
 
 logger = structlog.get_logger()
 
 
-def log_event(
-    session: Session,
+async def log_event(
+    session: AsyncSession,
     *,
     event: str,
     user_id: uuid.UUID | None = None,
@@ -25,7 +25,7 @@ def log_event(
             extra=metadata or {},
         )
         session.add(entry)
-        session.flush()
+        await session.flush()
         logger.info("audit_event", audit_event=event, user_id=str(user_id), org_id=str(org_id))
     except Exception as exc:
         logger.error("audit_log_failed", audit_event=event, error=str(exc))

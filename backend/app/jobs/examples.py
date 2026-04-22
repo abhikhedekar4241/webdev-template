@@ -39,12 +39,12 @@ def cleanup_expired_invitations_task(self) -> dict:
     from app.models.invitation import InvitationStatus, OrgInvitation
 
     try:
-        with Session(engine) as session:
-            expired = session.exec(
+        with Session(engine.sync_engine) as session:
+            expired = list(session.exec(
                 select(OrgInvitation)
                 .where(OrgInvitation.status == InvitationStatus.pending)
                 .where(OrgInvitation.expires_at < datetime.now(UTC))
-            ).all()
+            ).all())
 
             count = len(expired)
             for inv in expired:

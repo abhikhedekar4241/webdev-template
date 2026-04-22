@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Response
-from sqlmodel import Session, text
+from sqlmodel import text
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.db import get_session
 
@@ -7,9 +8,9 @@ router = APIRouter()
 
 
 @router.get("/health")
-def health_check(response: Response, session: Session = Depends(get_session)) -> dict:
+async def health_check(response: Response, session: AsyncSession = Depends(get_session)) -> dict:
     try:
-        session.exec(text("SELECT 1"))
+        await session.exec(text("SELECT 1"))
         db_status = "ok"
     except Exception:
         db_status = "error"

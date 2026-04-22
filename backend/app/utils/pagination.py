@@ -14,7 +14,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
     pages: int
 
 
-def paginate(
+async def paginate(
     items: Sequence[T],
     total: int,
     page: int,

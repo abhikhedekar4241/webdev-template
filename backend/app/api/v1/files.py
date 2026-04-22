@@ -2,7 +2,7 @@ import uuid
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.deps import get_current_user
 from app.core.db import get_session
@@ -20,10 +20,10 @@ logger = structlog.get_logger()
 async def upload_file(
     org_id: uuid.UUID,
     file: UploadFile,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    membership = org_service.get_membership(
+    membership = await org_service.get_membership(
         session, org_id=org_id, user_id=current_user.id
     )
     if not membership:
@@ -48,7 +48,7 @@ async def upload_file(
         content_type=content_type
     )
 
-    f = files_service.save_metadata(
+    f = await files_service.save_metadata(
         session,
         org_id=org_id,
         uploaded_by=current_user.id,
@@ -58,23 +58,23 @@ async def upload_file(
         size_bytes=size,
     )
 
-    session.commit()
-    session.refresh(f)
+    await session.commit()
+    await session.refresh(f)
 
     return FileResponse.model_validate(f)
 
 
 @router.get("/{file_id}/url", response_model=PresignedUrlResponse)
-def get_file_url(
+async def get_file_url(
     file_id: uuid.UUID,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    f = files_service.get_active_file(session, file_id=file_id)
+    f = await files_service.get_active_file(session, file_id=file_id)
     if not f:
         raise HTTPException(status_code=404, detail="File not found")
 
-    membership = org_service.get_membership(
+    membership = await org_service.get_membership(
         session, org_id=f.org_id, user_id=current_user.id
     )
     if not membership:
@@ -85,16 +85,16 @@ def get_file_url(
 
 
 @router.delete("/{file_id}", status_code=204)
-def delete_file(
+async def delete_file(
     file_id: uuid.UUID,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    f = files_service.get_active_file(session, file_id=file_id)
+    f = await files_service.get_active_file(session, file_id=file_id)
     if not f:
         raise HTTPException(status_code=404, detail="File not found")
 
-    membership = org_service.get_membership(
+    membership = await org_service.get_membership(
         session, org_id=f.org_id, user_id=current_user.id
     )
     if not membership:
@@ -106,5 +106,5 @@ def delete_file(
     ):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
-    files_service.soft_delete(session, file=f)
-    session.commit()
+    await files_service.soft_delete(session, file=f)
+    await session.commit()

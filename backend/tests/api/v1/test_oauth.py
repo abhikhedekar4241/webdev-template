@@ -12,14 +12,14 @@ def _google_token():
 def _google_user(sub="google-sub-123", email="oauth@example.com", name="OAuth User"):
     return {"sub": sub, "email": email, "name": name}
 
-def test_google_login_not_configured_returns_501(client: TestClient):
-    resp = client.get("/api/v1/auth/google")
+async def test_google_login_not_configured_returns_501(client: TestClient):
+    resp = await client.get("/api/v1/auth/google")
     assert resp.status_code == 501
 
 
-def test_google_callback_invalid_state_redirects_to_error(client: TestClient):
+async def test_google_callback_invalid_state_redirects_to_error(client: TestClient):
     client.cookies.set("oauth_state", "correct")
-    resp = client.get(
+    resp = await client.get(
         "/api/v1/auth/google/callback",
         params={"code": "abc", "state": "wrong"},
         follow_redirects=False,
@@ -28,9 +28,9 @@ def test_google_callback_invalid_state_redirects_to_error(client: TestClient):
     assert "error=oauth_failed" in resp.headers["location"]
 
 
-def test_google_callback_missing_code_redirects_to_error(client: TestClient):
+async def test_google_callback_missing_code_redirects_to_error(client: TestClient):
     client.cookies.set("oauth_state", "state123")
-    resp = client.get(
+    resp = await client.get(
         "/api/v1/auth/google/callback",
         params={"state": "state123", "error": "access_denied"},
         follow_redirects=False,
@@ -39,14 +39,14 @@ def test_google_callback_missing_code_redirects_to_error(client: TestClient):
     assert "oauth_failed" in resp.headers["location"]
 
 
-def test_google_callback_creates_new_user(client: TestClient, session: Session):
+async def test_google_callback_creates_new_user(client: TestClient, session: Session):
     client.cookies.set("oauth_state", "state123")
     with patch("app.api.v1.auth.oauth_service.exchange_code", return_value=_google_token()):
         with patch(
             "app.api.v1.auth.oauth_service.get_google_user_info",
             return_value=_google_user(),
         ):
-            resp = client.get(
+            resp = await client.get(
                 "/api/v1/auth/google/callback",
                 params={"code": "fake_code", "state": "state123"},
                 follow_redirects=False,
@@ -56,14 +56,14 @@ def test_google_callback_creates_new_user(client: TestClient, session: Session):
     assert "/auth/callback?token=" in location
 
     # User was created and verified
-    user = auth_service.get_by_email(session, email="oauth@example.com")
+    user = await auth_service.get_by_email(session, email="oauth@example.com")
     assert user is not None
     assert user.is_verified is True
     assert user.hashed_password is None  # OAuth-only user
 
 
-def test_google_callback_links_existing_email(client: TestClient, session: Session):
-    existing = auth_service.create_user(
+async def test_google_callback_links_existing_email(client: TestClient, session: Session):
+    existing = await auth_service.create_user(
         session,
         email="oauth@example.com",
         password="password123",
@@ -76,7 +76,7 @@ def test_google_callback_links_existing_email(client: TestClient, session: Sessi
             "app.api.v1.auth.oauth_service.get_google_user_info",
             return_value=_google_user(email=existing.email),
         ):
-            resp = client.get(
+            resp = await client.get(
                 "/api/v1/auth/google/callback",
                 params={"code": "fake_code", "state": "state123"},
                 follow_redirects=False,
@@ -84,16 +84,17 @@ def test_google_callback_links_existing_email(client: TestClient, session: Sessi
     assert resp.status_code in (302, 307)
 
     # OAuth account was linked to existing user
+    existing_id = existing.id
     session.expire_all()
-    oauth = session.exec(
-        select(UserOAuthAccount).where(UserOAuthAccount.user_id == existing.id)
-    ).first()
+    oauth = (await session.exec(
+        select(UserOAuthAccount).where(UserOAuthAccount.user_id == existing_id)
+    )).first()
     assert oauth is not None
     assert oauth.provider == "google"
 
 
-def test_google_callback_uses_existing_oauth_account(client: TestClient, session: Session):
-    user = auth_service.create_user(
+async def test_google_callback_uses_existing_oauth_account(client: TestClient, session: Session):
+    user = await auth_service.create_user(
         session,
         email="oauth2@example.com",
         password="password123",
@@ -107,7 +108,7 @@ def test_google_callback_uses_existing_oauth_account(client: TestClient, session
         provider_email=user.email,
     )
     session.add(oauth)
-    session.commit()
+    await session.commit()
 
     client.cookies.set("oauth_state", "state123")
     with patch("app.api.v1.auth.oauth_service.exchange_code", return_value=_google_token()):
@@ -115,7 +116,7 @@ def test_google_callback_uses_existing_oauth_account(client: TestClient, session
             "app.api.v1.auth.oauth_service.get_google_user_info",
             return_value=_google_user(sub="google-sub-456", email=user.email),
         ):
-            resp = client.get(
+            resp = await client.get(
                 "/api/v1/auth/google/callback",
                 params={"code": "fake_code", "state": "state123"},
                 follow_redirects=False,
@@ -124,8 +125,8 @@ def test_google_callback_uses_existing_oauth_account(client: TestClient, session
     assert "/auth/callback?token=" in resp.headers["location"]
 
 
-def test_google_callback_inactive_user_redirects_to_error(client: TestClient, session: Session):
-    user = auth_service.create_user(
+async def test_google_callback_inactive_user_redirects_to_error(client: TestClient, session: Session):
+    user = await auth_service.create_user(
         session,
         email="inactive@example.com",
         password="password123",
@@ -134,7 +135,7 @@ def test_google_callback_inactive_user_redirects_to_error(client: TestClient, se
     )
     user.is_active = False
     session.add(user)
-    session.commit()
+    await session.commit()
 
     client.cookies.set("oauth_state", "state123")
     with patch("app.api.v1.auth.oauth_service.exchange_code", return_value=_google_token()):
@@ -142,7 +143,7 @@ def test_google_callback_inactive_user_redirects_to_error(client: TestClient, se
             "app.api.v1.auth.oauth_service.get_google_user_info",
             return_value=_google_user(email=user.email),
         ):
-            resp = client.get(
+            resp = await client.get(
                 "/api/v1/auth/google/callback",
                 params={"code": "fake_code", "state": "state123"},
                 follow_redirects=False,

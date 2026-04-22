@@ -14,12 +14,12 @@ def _mock_minio():
     mock.remove_object.return_value = None
     return mock
 
-def test_upload_file_as_member(client: TestClient, alice, alice_org):
+async def test_upload_file_as_member(client: TestClient, alice, alice_org):
     mock = _mock_minio()
     with patch.object(
         FilesService, "_client", new_callable=property, fget=lambda self: mock
     ):
-        resp = client.post(
+        resp = await client.post(
             f"/api/v1/files/?org_id={alice_org.id}",
             headers=get_auth_header(alice.id),
             files={
@@ -32,12 +32,12 @@ def test_upload_file_as_member(client: TestClient, alice, alice_org):
     assert data["content_type"] == "application/pdf"
 
 
-def test_upload_file_as_non_member_returns_403(client: TestClient, bob, alice_org):
+async def test_upload_file_as_non_member_returns_403(client: TestClient, bob, alice_org):
     mock = _mock_minio()
     with patch.object(
         FilesService, "_client", new_callable=property, fget=lambda self: mock
     ):
-        resp = client.post(
+        resp = await client.post(
             f"/api/v1/files/?org_id={alice_org.id}",
             headers=get_auth_header(bob.id),
             files={"file": ("x.txt", io.BytesIO(b"data"), "text/plain")},
@@ -45,8 +45,8 @@ def test_upload_file_as_non_member_returns_403(client: TestClient, bob, alice_or
     assert resp.status_code == 403
 
 
-def test_get_file_url_as_member(client: TestClient, alice, alice_org, session: Session):
-    f = files_service.save_metadata(
+async def test_get_file_url_as_member(client: TestClient, alice, alice_org, session: Session):
+    f = await files_service.save_metadata(
         session,
         org_id=alice_org.id,
         uploaded_by=alice.id,
@@ -59,7 +59,7 @@ def test_get_file_url_as_member(client: TestClient, alice, alice_org, session: S
     with patch.object(
         FilesService, "_client", new_callable=property, fget=lambda self: mock
     ):
-        resp = client.get(
+        resp = await client.get(
             f"/api/v1/files/{f.id}/url",
             headers=get_auth_header(alice.id),
         )
@@ -67,16 +67,16 @@ def test_get_file_url_as_member(client: TestClient, alice, alice_org, session: S
     assert "url" in resp.json()
 
 
-def test_get_file_url_not_found(client: TestClient, alice):
-    resp = client.get(
+async def test_get_file_url_not_found(client: TestClient, alice):
+    resp = await client.get(
         f"/api/v1/files/{uuid.uuid4()}/url",
         headers=get_auth_header(alice.id),
     )
     assert resp.status_code == 404
 
 
-def test_delete_file_as_uploader(client: TestClient, alice, alice_org, session: Session):
-    f = files_service.save_metadata(
+async def test_delete_file_as_uploader(client: TestClient, alice, alice_org, session: Session):
+    f = await files_service.save_metadata(
         session,
         org_id=alice_org.id,
         uploaded_by=alice.id,
@@ -89,17 +89,17 @@ def test_delete_file_as_uploader(client: TestClient, alice, alice_org, session: 
     with patch.object(
         FilesService, "_client", new_callable=property, fget=lambda self: mock
     ):
-        resp = client.delete(
+        resp = await client.delete(
             f"/api/v1/files/{f.id}",
             headers=get_auth_header(alice.id),
         )
     assert resp.status_code == 204
 
 
-def test_delete_file_as_non_member_returns_403(
+async def test_delete_file_as_non_member_returns_403(
     client: TestClient, bob, alice_org, session: Session, alice
 ):
-    f = files_service.save_metadata(
+    f = await files_service.save_metadata(
         session,
         org_id=alice_org.id,
         uploaded_by=alice.id,
@@ -108,7 +108,7 @@ def test_delete_file_as_non_member_returns_403(
         content_type="text/plain",
         size_bytes=10,
     )
-    resp = client.delete(
+    resp = await client.delete(
         f"/api/v1/files/{f.id}",
         headers=get_auth_header(bob.id),
     )

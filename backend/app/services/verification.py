@@ -2,7 +2,8 @@ import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlmodel import Session, select
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.user import User
 from app.models.verification import EmailVerification
@@ -17,24 +18,25 @@ def _generate_otp() -> str:
 
 
 class VerificationService(CRUDBase[EmailVerification]):
-    def create_otp(self, session: Session, *, user_id: uuid.UUID) -> EmailVerification:
+    async def create_otp(self, session: AsyncSession, *, user_id: uuid.UUID) -> EmailVerification:
         record = EmailVerification(
             user_id=user_id,
             otp=_generate_otp(),
             expires_at=datetime.now(UTC) + timedelta(seconds=OTP_EXPIRE_SECONDS),
         )
         session.add(record)
-        session.flush()
+        await session.flush()
+        await session.refresh(record)
         return record
 
-    def verify_otp(
-        self, session: Session, *, email: str, otp: str
+    async def verify_otp(
+        self, session: AsyncSession, *, email: str, otp: str
     ) -> User | None:
-        user = session.exec(select(User).where(User.email == email)).first()
+        user = (await session.exec(select(User).where(User.email == email))).first()
         if not user:
             return None
 
-        record = session.exec(
+        record = (await session.exec(
             select(EmailVerification)
             .where(
                 EmailVerification.user_id == user.id,
@@ -43,7 +45,7 @@ class VerificationService(CRUDBase[EmailVerification]):
                 EmailVerification.expires_at > datetime.now(UTC),
             )
             .order_by(EmailVerification.created_at.desc())  # type: ignore[union-attr]
-        ).first()
+        )).first()
 
         if not record:
             return None
@@ -52,19 +54,19 @@ class VerificationService(CRUDBase[EmailVerification]):
         user.is_verified = True
         session.add(record)
         session.add(user)
-        session.flush()
+        await session.flush()
         return user
 
-    def has_recent_otp(self, session: Session, *, user_id: uuid.UUID) -> bool:
+    async def has_recent_otp(self, session: AsyncSession, *, user_id: uuid.UUID) -> bool:
         cutoff = datetime.now(UTC) - timedelta(seconds=RESEND_COOLDOWN_SECONDS)
-        record = session.exec(
+        record = (await session.exec(
             select(EmailVerification)
             .where(
                 EmailVerification.user_id == user_id,
                 EmailVerification.created_at > cutoff,
             )
             .order_by(EmailVerification.created_at.desc())  # type: ignore[union-attr]
-        ).first()
+        )).first()
         return record is not None
 
 

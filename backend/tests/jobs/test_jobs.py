@@ -1,57 +1,62 @@
 import uuid
 from datetime import UTC, datetime, timedelta
+from unittest.mock import MagicMock, patch
 
 import pytest
-from sqlmodel import Session, select
+from sqlalchemy import create_engine
+from sqlmodel import Session, SQLModel, select
+from sqlmodel.pool import StaticPool
 
 from app.jobs.examples import cleanup_expired_invitations_task, send_welcome_email_task
 from app.models.invitation import InvitationStatus, OrgInvitation
 
 
-def test_send_welcome_email_task():
+async def test_send_welcome_email_task():
     result = send_welcome_email_task.run(user_email="test@example.com", full_name="Test")
     assert result["status"] == "sent"
     assert result["to"] == "test@example.com"
 
 
-def test_cleanup_expired_invitations_task(session: Session):
-    # Create one expired and one non-expired invitation
+def test_cleanup_expired_invitations_task():
+    # Create a dedicated sync in-memory engine for this task test
+    sync_engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(sync_engine)
+
     now = datetime.now(UTC)
-    
     expired = OrgInvitation(
         org_id=uuid.uuid4(),
         invited_email="expired@example.com",
         invited_by=uuid.uuid4(),
         expires_at=now - timedelta(days=1),
-        status=InvitationStatus.pending
+        status=InvitationStatus.pending,
     )
     valid = OrgInvitation(
         org_id=uuid.uuid4(),
         invited_email="valid@example.com",
         invited_by=uuid.uuid4(),
         expires_at=now + timedelta(days=1),
-        status=InvitationStatus.pending
+        status=InvitationStatus.pending,
     )
-    
-    session.add(expired)
-    session.add(valid)
-    session.commit()
 
-    # We use .run() to call the function directly without celery infrastructure
-    # But wait, cleanup_expired_invitations_task uses app.core.db.engine
-    # In tests, we want it to use our test session/engine.
-    # Since the task creates its own session using engine, we might need to patch it.
+    with Session(sync_engine) as session:
+        session.add(expired)
+        session.add(valid)
+        session.commit()
+        
+        # Patch the async engine so the task uses our sync engine
+        mock_async_engine = MagicMock()
+        mock_async_engine.sync_engine = sync_engine
     
-    from unittest.mock import patch
-    from app.core import db
+        with patch("app.core.db.engine", mock_async_engine):
+            result = cleanup_expired_invitations_task.run()
     
-    with patch("app.core.db.engine", session.get_bind()):
-        result = cleanup_expired_invitations_task.run()
+        assert result["expired_count"] == 1
     
-    assert result["expired_count"] == 1
-    
-    session.refresh(expired)
-    session.refresh(valid)
-    
-    assert expired.status == InvitationStatus.declined
-    assert valid.status == InvitationStatus.pending
+        session.refresh(expired)
+        session.refresh(valid)
+        assert expired.status == InvitationStatus.declined
+        assert valid.status == InvitationStatus.pending

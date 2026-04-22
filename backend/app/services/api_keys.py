@@ -3,7 +3,8 @@ import secrets
 import uuid
 from datetime import UTC, datetime
 
-from sqlmodel import Session, select
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.api_key import OrgApiKey
 from app.services.base import CRUDBase
@@ -20,9 +21,9 @@ def _hash_key(key: str) -> str:
 
 
 class ApiKeyService(CRUDBase[OrgApiKey]):
-    def create(
+    async def create(
         self,
-        session: Session,
+        session: AsyncSession,
         *,
         org_id: uuid.UUID,
         name: str,
@@ -39,39 +40,39 @@ class ApiKeyService(CRUDBase[OrgApiKey]):
             created_by=created_by,
         )
         session.add(record)
-        session.flush()
+        await session.flush()
         return record, raw_key
 
-    def list_for_org(self, session: Session, *, org_id: uuid.UUID) -> list[OrgApiKey]:
+    async def list_for_org(self, session: AsyncSession, *, org_id: uuid.UUID) -> list[OrgApiKey]:
         return list(
-            session.exec(
+            (await session.exec(
                 select(OrgApiKey)
                 .where(OrgApiKey.org_id == org_id)
                 .where(OrgApiKey.revoked_at.is_(None))  # type: ignore[arg-type]
                 .order_by(OrgApiKey.created_at.desc())
-            ).all()
+            )).all()
         )
 
-    def revoke(
-        self, session: Session, *, key_id: uuid.UUID, org_id: uuid.UUID
+    async def revoke(
+        self, session: AsyncSession, *, key_id: uuid.UUID, org_id: uuid.UUID
     ) -> bool:
-        key = session.get(OrgApiKey, key_id)
+        key = await session.get(OrgApiKey, key_id)
         if not key or key.org_id != org_id:
             return False
         if key.revoked_at is not None:
             return True  # already revoked — preserve original timestamp
         key.revoked_at = datetime.now(UTC)
         session.add(key)
-        session.flush()
+        await session.flush()
         return True
 
-    def authenticate(self, session: Session, *, raw_key: str) -> OrgApiKey | None:
+    async def authenticate(self, session: AsyncSession, *, raw_key: str) -> OrgApiKey | None:
         """Verify a raw API key. Returns the record and updates last_used_at, or
         None if invalid/revoked/expired."""
         key_hash = _hash_key(raw_key)
-        key = session.exec(
+        key = (await session.exec(
             select(OrgApiKey).where(OrgApiKey.key_hash == key_hash)
-        ).first()
+        )).first()
         if not key:
             return None
         if key.revoked_at is not None:
@@ -80,7 +81,7 @@ class ApiKeyService(CRUDBase[OrgApiKey]):
             return None
         key.last_used_at = datetime.now(UTC)
         session.add(key)
-        session.flush()
+        await session.flush()
         return key
 
 

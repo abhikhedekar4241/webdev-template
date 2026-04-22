@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import DateTime
 from sqlmodel import Field, SQLModel
@@ -15,5 +15,5 @@ class EmailVerification(SQLModel, table=True):
     used_at: datetime | None = Field(sa_type=DateTime(timezone=True), default=None)
     created_at: datetime = Field(
         sa_type=DateTime(timezone=True),
-        default_factory=lambda: datetime.now(UTC)
+        default_factory=lambda: datetime.now(timezone.utc)
     )

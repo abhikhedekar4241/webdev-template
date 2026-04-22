@@ -102,7 +102,7 @@ services:
 
   frontend:
     build: ./frontend
-    command: npm run dev
+    command: pnpm run dev
     environment:
       NEXT_PUBLIC_API_URL: http://localhost
     volumes:

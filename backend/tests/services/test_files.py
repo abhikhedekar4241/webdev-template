@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 from sqlmodel import Session
 from app.services.files import FilesService, files_service
 
-def test_save_file_metadata(session: Session, alice, alice_org):
-    f = files_service.save_metadata(
+async def test_save_file_metadata(session: Session, alice, alice_org):
+    f = await files_service.save_metadata(
         session,
         org_id=alice_org.id,
         uploaded_by=alice.id,
@@ -18,8 +18,8 @@ def test_save_file_metadata(session: Session, alice, alice_org):
     assert f.deleted_at is None
 
 
-def test_get_file(session: Session, alice, alice_org):
-    f = files_service.save_metadata(
+async def test_get_file(session: Session, alice, alice_org):
+    f = await files_service.save_metadata(
         session,
         org_id=alice_org.id,
         uploaded_by=alice.id,
@@ -28,13 +28,13 @@ def test_get_file(session: Session, alice, alice_org):
         content_type="text/plain",
         size_bytes=256,
     )
-    fetched = files_service.get_active_file(session, file_id=f.id)
+    fetched = await files_service.get_active_file(session, file_id=f.id)
     assert fetched is not None
     assert fetched.filename == "doc.txt"
 
 
-def test_soft_delete_file(session: Session, alice, alice_org):
-    f = files_service.save_metadata(
+async def test_soft_delete_file(session: Session, alice, alice_org):
+    f = await files_service.save_metadata(
         session,
         org_id=alice_org.id,
         uploaded_by=alice.id,
@@ -43,12 +43,12 @@ def test_soft_delete_file(session: Session, alice, alice_org):
         content_type="text/plain",
         size_bytes=10,
     )
-    files_service.soft_delete(session, file=f)
-    deleted = files_service.get_active_file(session, file_id=f.id)
+    await files_service.soft_delete(session, file=f)
+    deleted = await files_service.get_active_file(session, file_id=f.id)
     assert deleted is None
 
 
-def test_get_presigned_url_calls_minio():
+async def test_get_presigned_url_calls_minio():
     mock_client = MagicMock()
     mock_client.presigned_get_object.return_value = "https://minio.example.com/key?sig=abc"
 

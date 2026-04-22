@@ -39,3 +39,4 @@ frontend/src/types/api.ts
 
 # Git worktrees
 .worktrees/
+frontend/tsconfig.tsbuildinfo

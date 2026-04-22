@@ -8,8 +8,8 @@ logger = structlog.get_logger()
 
 
 class StatsService:
-    def _write(self, measurement: str, field: str, value: float) -> None:
-        write_api = get_write_api()
+    async def _write(self, measurement: str, field: str, value: float) -> None:
+        write_api = await get_write_api()
         if write_api is None:
             return
         try:
@@ -22,17 +22,17 @@ class StatsService:
         except Exception as exc:
             logger.warning("stats_write_failed", measurement=measurement, error=str(exc))
 
-    def inc(self, measurement: str, value: float = 1) -> None:
-        self._write(measurement, "count", value)
+    async def inc(self, measurement: str, value: float = 1) -> None:
+        await self._write(measurement, "count", value)
 
-    def avg(self, measurement: str, value: float) -> None:
-        self._write(measurement, "avg", value)
+    async def avg(self, measurement: str, value: float) -> None:
+        await self._write(measurement, "avg", value)
 
-    def set(self, measurement: str, value: float) -> None:  # noqa: A003
-        self._write(measurement, "value", value)
+    async def set(self, measurement: str, value: float) -> None:  # noqa: A003
+        await self._write(measurement, "value", value)
 
-    def max(self, measurement: str, value: float) -> None:  # noqa: A003
-        self._write(measurement, "max", value)
+    async def max(self, measurement: str, value: float) -> None:  # noqa: A003
+        await self._write(measurement, "max", value)
 
 
 stats = StatsService()

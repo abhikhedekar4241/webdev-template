@@ -54,7 +54,7 @@ export default function NotificationsPage() {
           </p>
         );
       default:
-        return <p className="text-sm">{notification.data.message || "System notification."}</p>;
+        return <p className="text-sm">{String(notification.data?.message || "System notification.")}</p>;
     }
   }
 

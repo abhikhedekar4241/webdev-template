@@ -52,7 +52,7 @@ export function useCreateInvitation() {
 
   return useMutation({
     mutationFn: (data: { org_id: string; email: string; role: string }) =>
-      invitationsService.create(data),
+      invitationsService.create({ ...data, role: data.role as "owner" | "admin" | "member" }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.invitations.list });
       toast.success(`Invitation sent to ${variables.email}`);

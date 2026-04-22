@@ -10,7 +10,7 @@ _client: InfluxDBClient | None = None
 _write_api = None
 
 
-def get_write_api():
+async def get_write_api():
     global _client, _write_api
     if not settings.INFLUXDB_TOKEN:
         return None

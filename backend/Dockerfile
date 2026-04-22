@@ -8,9 +8,13 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements*.txt ./
-ARG INSTALL_DEV=false
-RUN if [ "$INSTALL_DEV" = "true" ] ; then pip install --no-cache-dir -r requirements-dev.txt ; else pip install --no-cache-dir -r requirements.txt ; fi
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
+
+COPY requirements-frozen.txt ./
+# Install dependencies into the system site-packages so they survive the volume mount
+RUN uv pip install --system --no-cache -r requirements-frozen.txt
 
 COPY . .
 

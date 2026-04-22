@@ -1,5 +1,6 @@
 import structlog
-from sqlmodel import Session, select
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.security import hash_password, verify_password
 from app.models.user import User
@@ -9,12 +10,12 @@ logger = structlog.get_logger()
 
 
 class AuthService(CRUDBase[User]):
-    def get_by_email(self, session: Session, *, email: str) -> User | None:
-        return session.exec(select(User).where(User.email == email)).first()
+    async def get_by_email(self, session: AsyncSession, *, email: str) -> User | None:
+        return (await session.exec(select(User).where(User.email == email))).first()
 
-    def create_user(
+    async def create_user(
         self,
-        session: Session,
+        session: AsyncSession,
         *,
         email: str,
         password: str,
@@ -28,14 +29,15 @@ class AuthService(CRUDBase[User]):
             is_verified=is_verified,
         )
         session.add(user)
-        session.flush()
+        await session.flush()
+        await session.refresh(user)
         logger.info("user_created", email=email, user_id=str(user.id))
         return user
 
-    def authenticate(
-        self, session: Session, *, email: str, password: str
+    async def authenticate(
+        self, session: AsyncSession, *, email: str, password: str
     ) -> User | None:
-        user = self.get_by_email(session, email=email)
+        user = await self.get_by_email(session, email=email)
         if not user:
             logger.warning("auth_failed_user_not_found", email=email)
             return None

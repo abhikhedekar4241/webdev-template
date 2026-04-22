@@ -5,7 +5,7 @@ from typing import BinaryIO
 import structlog
 from minio import Minio
 from minio.error import S3Error
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
 from app.models.file import File
@@ -69,9 +69,9 @@ class FilesService(CRUDBase[File]):
         except S3Error as e:
             logger.warning("minio_delete_error", storage_key=storage_key, error=str(e))
 
-    def save_metadata(
+    async def save_metadata(
         self,
-        session: Session,
+        session: AsyncSession,
         *,
         org_id: uuid.UUID,
         uploaded_by: uuid.UUID,
@@ -89,20 +89,20 @@ class FilesService(CRUDBase[File]):
             size_bytes=size_bytes,
         )
         session.add(f)
-        session.flush()
+        await session.flush()
         logger.info("file_metadata_saved", file_id=str(f.id), storage_key=storage_key)
         return f
 
-    def get_active_file(self, session: Session, *, file_id: uuid.UUID) -> File | None:
-        f = session.get(File, file_id)
+    async def get_active_file(self, session: AsyncSession, *, file_id: uuid.UUID) -> File | None:
+        f = await session.get(File, file_id)
         if f and f.deleted_at is None:
             return f
         return None
 
-    def soft_delete(self, session: Session, *, file: File) -> File:
+    async def soft_delete(self, session: AsyncSession, *, file: File) -> File:
         file.deleted_at = datetime.now(UTC)
         session.add(file)
-        session.flush()
+        await session.flush()
         logger.info("file_soft_deleted", file_id=str(file.id))
         return file
 

@@ -1,7 +1,8 @@
 import api from "./api";
 import { components } from "@/types/api";
 
-type NotificationResponse = components["schemas"]["NotificationResponse"];
+export type NotificationData = components["schemas"]["NotificationResponse"];
+type NotificationResponse = NotificationData;
 
 export const notificationsService = {
   list: (unreadOnly = false) =>

@@ -3,7 +3,8 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
-from sqlmodel import Session, select
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.deps import get_current_superuser, get_session
 from app.core.security import create_access_token
@@ -22,14 +23,14 @@ router = APIRouter()
 
 
 @router.get("/stats", response_model=SystemStats)
-def get_stats(
-    session: Session = Depends(get_session),
+async def get_stats(
+    session: AsyncSession = Depends(get_session),
     current_superuser: User = Depends(get_current_superuser),
 ):
     """Get global system statistics."""
-    user_count = session.exec(select(func.count(User.id))).one()
-    org_count = session.exec(select(func.count(Organization.id))).one()
-    total_storage = session.exec(select(func.sum(File.size_bytes))).one() or 0
+    user_count = (await session.exec(select(func.count(User.id)))).one()
+    org_count = (await session.exec(select(func.count(Organization.id)))).one()
+    total_storage = (await session.exec(select(func.sum(File.size_bytes)))).one() or 0
 
     return {
         "user_count": user_count,
@@ -39,13 +40,13 @@ def get_stats(
 
 
 @router.get("/users", response_model=UserListResponse)
-def list_users(
+async def list_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
     sort_by: str | None = None,
     sort_order: str = Query("asc", pattern="^(asc|desc)$"),
     search: str | None = None,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
     current_superuser: User = Depends(get_current_superuser),
 ):
     """List all users in the system."""
@@ -62,13 +63,13 @@ def list_users(
 
 
 @router.get("/orgs", response_model=OrgListResponse)
-def list_organizations(
+async def list_organizations(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
     sort_by: str | None = None,
     sort_order: str = Query("asc", pattern="^(asc|desc)$"),
     search: str | None = None,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
     current_superuser: User = Depends(get_current_superuser),
 ):
     """List all organizations in the system."""
@@ -85,13 +86,13 @@ def list_organizations(
 
 
 @router.post("/impersonate/{user_id}", response_model=ImpersonateResponse)
-def impersonate_user(
+async def impersonate_user(
     user_id: uuid.UUID,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
     current_superuser: User = Depends(get_current_superuser),
 ):
     """Get a short-lived access token for any user (impersonation)."""
-    user = session.get(User, user_id)
+    user = await session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 

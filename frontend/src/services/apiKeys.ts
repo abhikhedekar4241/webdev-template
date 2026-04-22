@@ -2,7 +2,7 @@ import api from "./api";
 import { components } from "@/types/api";
 
 type ApiKeyResponse = components["schemas"]["ApiKeyResponse"];
-type ApiKeyCreated = components["schemas"]["ApiKeyCreated"];
+export type ApiKeyCreated = components["schemas"]["ApiKeyCreated"];
 type ApiKeyCreate = components["schemas"]["ApiKeyCreate"];
 
 export const apiKeysService = {

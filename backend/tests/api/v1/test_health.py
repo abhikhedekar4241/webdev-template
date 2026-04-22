@@ -1,26 +1,26 @@
-def test_health_returns_ok(client):
-    response = client.get("/health")
+async def test_health_returns_ok(client):
+    response = await client.get("/health")
     assert response.status_code == 200
 
 
-def test_health_body_has_status_ok(client):
-    response = client.get("/health")
+async def test_health_body_has_status_ok(client):
+    response = await client.get("/health")
     data = response.json()
     assert data["status"] == "ok"
 
 
-def test_health_body_has_db_ok(client):
-    response = client.get("/health")
+async def test_health_body_has_db_ok(client):
+    response = await client.get("/health")
     data = response.json()
     assert data["db"] == "ok"
 
 
-def test_health_has_request_id_header(client):
-    response = client.get("/health")
+async def test_health_has_request_id_header(client):
+    response = await client.get("/health")
     assert "x-request-id" in response.headers
 
 
-def test_health_returns_503_when_db_fails():
+async def test_health_returns_503_when_db_fails():
     from unittest.mock import MagicMock
 
     from fastapi.testclient import TestClient

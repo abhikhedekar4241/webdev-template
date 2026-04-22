@@ -1,7 +1,8 @@
 import api from "./api";
 import { components } from "@/types/api";
 
-type InvitationResponse = components["schemas"]["InvitationResponse"];
+export type InvitationData = components["schemas"]["InvitationResponse"];
+type InvitationResponse = InvitationData;
 type InvitationCreate = components["schemas"]["InvitationCreate"];
 type MessageResponse = components["schemas"]["MessageResponse"];
 

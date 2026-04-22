@@ -45,7 +45,7 @@ export default function OnboardingPage() {
 
     setIsFinalizing(true);
     try {
-      await authService.completeOnboarding(fullName, finalOrgName);
+      await authService.completeOnboarding(fullName, finalOrgName || "");
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["me"] }),
         queryClient.invalidateQueries({ queryKey: ["orgs"] }),

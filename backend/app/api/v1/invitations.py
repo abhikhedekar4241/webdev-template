@@ -2,7 +2,7 @@ import uuid
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.deps import get_current_user, require_role
 from app.core.config import settings
@@ -22,26 +22,26 @@ router = APIRouter(prefix="/api/v1/invitations", tags=["invitations"])
 logger = structlog.get_logger()
 
 
-def _get_invitation_or_404(session: Session, inv_id: uuid.UUID) -> OrgInvitation:
-    inv = session.get(OrgInvitation, inv_id)
+async def _get_invitation_or_404(session: AsyncSession, inv_id: uuid.UUID) -> OrgInvitation:
+    inv = await session.get(OrgInvitation, inv_id)
     if not inv:
         raise HTTPException(status_code=404, detail="Invitation not found")
     return inv
 
 
 @router.post("/", response_model=InvitationResponse, status_code=201)
-def create_invitation(
+async def create_invitation(
     body: InvitationCreate,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    require_role(session, body.org_id, current_user.id, [OrgRole.owner, OrgRole.admin])
+    await require_role(session, body.org_id, current_user.id, [OrgRole.owner, OrgRole.admin])
 
-    org = session.get(Organization, body.org_id)
+    org = await session.get(Organization, body.org_id)
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    inv = invitation_service.create_invitation(
+    inv = await invitation_service.create_invitation(
         session,
         org_id=body.org_id,
         invited_email=body.email,
@@ -49,17 +49,22 @@ def create_invitation(
         invited_by=current_user.id,
     )
 
-    session.commit()
-    session.refresh(inv)
+    # Capture values before commit (objects expire after commit)
+    org_name = org.name
+    invited_by_name = current_user.full_name
+    role_value = body.role.value
+
+    await session.commit()
+    await session.refresh(inv)
 
     email_service.send(
         to=body.email,
-        subject=f"You've been invited to join {org.name}",
+        subject=f"You've been invited to join {org_name}",
         template="invite",
         context={
-            "org_name": org.name,
-            "invited_by_name": current_user.full_name,
-            "role": body.role.value,
+            "org_name": org_name,
+            "invited_by_name": invited_by_name,
+            "role": role_value,
             "invitations_url": f"{settings.FRONTEND_URL}/invitations",
         },
     )
@@ -67,7 +72,7 @@ def create_invitation(
     return InvitationResponse(
         id=inv.id,
         org_id=inv.org_id,
-        org_name=org.name,
+        org_name=org_name,
         invited_email=inv.invited_email,
         role=inv.role,
         status=inv.status,
@@ -77,15 +82,15 @@ def create_invitation(
 
 
 @router.get("/", response_model=list[InvitationResponse])
-def list_invitations(
-    session: Session = Depends(get_session),
+async def list_invitations(
+    session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    invitations = invitation_service.list_pending_for_email(session, current_user.email)
+    invitations = await invitation_service.list_pending_for_email(session, current_user.email)
 
     results = []
     for inv in invitations:
-        org = session.get(Organization, inv.org_id)
+        org = await session.get(Organization, inv.org_id)
         results.append(
             InvitationResponse(
                 id=inv.id,
@@ -103,24 +108,24 @@ def list_invitations(
 
 
 @router.post("/{inv_id}/accept", response_model=MessageResponse)
-def accept_invitation(
+async def accept_invitation(
     inv_id: uuid.UUID,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    inv = _get_invitation_or_404(session, inv_id)
-    invitation_service.accept_invitation(session, invitation=inv, user=current_user)
-    session.commit()
+    inv = await _get_invitation_or_404(session, inv_id)
+    await invitation_service.accept_invitation(session, invitation=inv, user=current_user)
+    await session.commit()
     return MessageResponse(message="Invitation accepted")
 
 
 @router.post("/{inv_id}/decline", response_model=MessageResponse)
-def decline_invitation(
+async def decline_invitation(
     inv_id: uuid.UUID,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    inv = _get_invitation_or_404(session, inv_id)
-    invitation_service.decline_invitation(session, invitation=inv, user=current_user)
-    session.commit()
+    inv = await _get_invitation_or_404(session, inv_id)
+    await invitation_service.decline_invitation(session, invitation=inv, user=current_user)
+    await session.commit()
     return MessageResponse(message="Invitation declined")

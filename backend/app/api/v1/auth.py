@@ -7,7 +7,8 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlmodel import Session, select
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.deps import get_current_user
 from app.core.config import settings
@@ -34,11 +35,11 @@ logger = structlog.get_logger()
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(
+async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
 ) -> TokenResponse:
-    user = auth_service.authenticate(
+    user = await auth_service.authenticate(
         session, email=form_data.username, password=form_data.password
     )
     if not user:
@@ -56,11 +57,11 @@ def login(
 
 
 @router.post("/register", response_model=UserResponse, status_code=201)
-def register(
+async def register(
     body: RegisterRequest,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
 ) -> UserResponse:
-    existing = auth_service.get_by_email(session, email=body.email)
+    existing = await auth_service.get_by_email(session, email=body.email)
     if existing:
         if existing.is_verified:
             raise HTTPException(
@@ -74,29 +75,30 @@ def register(
         session.add(existing)
         user = existing
     else:
-        user = auth_service.create_user(
+        user = await auth_service.create_user(
             session, email=body.email, password=body.password, full_name=body.full_name
         )
 
-    otp_record = verification_service.create_otp(session, user_id=user.id)
-    session.commit()
-    session.refresh(user)
+    otp_record = await verification_service.create_otp(session, user_id=user.id)
+    otp = otp_record.otp  # capture before commit (objects expire after commit)
+    await session.commit()
+    await session.refresh(user)
 
     email_service.send(
         to=user.email,
         subject="Verify your email",
         template="verify_email",
-        context={"full_name": user.full_name, "otp": otp_record.otp},
+        context={"full_name": user.full_name, "otp": otp},
     )
     return UserResponse.model_validate(user)
 
 
 @router.post("/verify-email", response_model=TokenResponse)
-def verify_email(
+async def verify_email(
     body: VerifyEmailRequest,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
 ) -> TokenResponse:
-    user = verification_service.verify_otp(
+    user = await verification_service.verify_otp(
         session, email=body.email, otp=body.otp
     )
     if not user:
@@ -104,47 +106,48 @@ def verify_email(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired OTP",
         )
-    session.commit()
+    await session.commit()
     token = create_access_token(str(user.id))
     return TokenResponse(access_token=token)
 
 
 @router.post("/resend-verification", status_code=200)
-def resend_verification(
+async def resend_verification(
     body: ResendVerificationRequest,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
 ) -> dict:
-    user = auth_service.get_by_email(session, email=body.email)
+    user = await auth_service.get_by_email(session, email=body.email)
     # Always return 200 even if email not found (avoid user enumeration)
     resend_msg = "If that email exists and is unverified, a new code was sent"
     if not user or user.is_verified:
         return {"message": resend_msg}
-    if verification_service.has_recent_otp(session, user_id=user.id):
+    if await verification_service.has_recent_otp(session, user_id=user.id):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Please wait 60 seconds before requesting another code",
         )
-    otp_record = verification_service.create_otp(session, user_id=user.id)
-    session.commit()
+    otp_record = await verification_service.create_otp(session, user_id=user.id)
+    otp = otp_record.otp  # capture before commit
+    await session.commit()
 
     email_service.send(
         to=user.email,
         subject="Verify your email",
         template="verify_email",
-        context={"full_name": user.full_name, "otp": otp_record.otp},
+        context={"full_name": user.full_name, "otp": otp},
     )
     return {"message": resend_msg}
 
 
 @router.get("/me", response_model=UserResponse)
-def get_me(current_user: User = Depends(get_current_user)) -> UserResponse:
+async def get_me(current_user: User = Depends(get_current_user)) -> UserResponse:
     return UserResponse.model_validate(current_user)
 
 
 @router.post("/onboarding", response_model=UserResponse)
-def complete_onboarding(
+async def complete_onboarding(
     body: OnboardingRequest,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> Any:
     """Complete user onboarding by setting full name and optionally creating first org."""
@@ -159,23 +162,23 @@ def complete_onboarding(
     if body.org_name:
         slug = body.org_name.lower().replace(" ", "-")
         # Check if slug exists, if so append random suffix
-        existing_org = org_service.get_by_slug(session, slug=slug)
+        existing_org = await org_service.get_by_slug(session, slug=slug)
         if existing_org:
             slug = f"{slug}-{secrets.token_hex(3)}"
 
-        org_service.create_org(
+        await org_service.create_org(
             session, name=body.org_name, slug=slug, created_by=current_user.id
         )
 
     session.add(current_user)
-    session.commit()
-    session.refresh(current_user)
+    await session.commit()
+    await session.refresh(current_user)
 
     return UserResponse.model_validate(current_user)
 
 
 @router.get("/google")
-def google_login(request: Request) -> RedirectResponse:
+async def google_login(request: Request) -> RedirectResponse:
     if not settings.GOOGLE_CLIENT_ID:
         raise HTTPException(
             status_code=501, detail="Google OAuth is not configured"
@@ -191,9 +194,9 @@ def google_login(request: Request) -> RedirectResponse:
 
 
 @router.get("/google/callback")
-def google_callback(
+async def google_callback(
     request: Request,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
     code: str | None = None,
     state: str | None = None,
     error: str | None = None,
@@ -222,18 +225,18 @@ def google_callback(
     google_name: str = user_info.get("name", google_email)
 
     # 1. Existing OAuth account → log in directly
-    existing_oauth = session.exec(
+    existing_oauth = (await session.exec(
         select(UserOAuthAccount).where(
             UserOAuthAccount.provider == "google",
             UserOAuthAccount.provider_user_id == google_sub,
         )
-    ).first()
+    )).first()
 
     if existing_oauth:
-        user = session.get(User, existing_oauth.user_id)
+        user = await session.get(User, existing_oauth.user_id)
     else:
         # 2. Existing email → auto-link
-        user = auth_service.get_by_email(session, email=google_email)
+        user = await auth_service.get_by_email(session, email=google_email)
         if user:
             oauth_account = UserOAuthAccount(
                 user_id=user.id,
@@ -245,7 +248,7 @@ def google_callback(
                 user.is_verified = True
                 session.add(user)
             session.add(oauth_account)
-            session.commit()
+            await session.commit()
         else:
             # 3. New user
             user = User(
@@ -254,8 +257,8 @@ def google_callback(
                 is_verified=True,
             )
             session.add(user)
-            session.commit()
-            session.refresh(user)
+            await session.commit()
+            await session.refresh(user)
             oauth_account = UserOAuthAccount(
                 user_id=user.id,
                 provider="google",
@@ -263,7 +266,7 @@ def google_callback(
                 provider_email=google_email,
             )
             session.add(oauth_account)
-            session.commit()
+            await session.commit()
 
     if not user or not user.is_active:
         return _error_redirect

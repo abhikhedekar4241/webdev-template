@@ -3,7 +3,8 @@ from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
 from sqlalchemy import func
-from sqlmodel import Session, SQLModel, select
+from sqlmodel import SQLModel, select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 T = TypeVar("T", bound=SQLModel)
 
@@ -11,8 +12,8 @@ class PaginatedResponse(BaseModel, Generic[T]):
     items: Sequence[T]
     total: int
 
-def apply_pagination_sorting_filtering(
-    session: Session,
+async def apply_pagination_sorting_filtering(
+    session: AsyncSession,
     model: type[T],
     *,
     skip: int = 0,
@@ -53,9 +54,9 @@ def apply_pagination_sorting_filtering(
                 query = query.order_by(col.asc())
 
     # Total count before pagination
-    total = session.exec(select(func.count()).select_from(query.subquery())).one()
+    total = (await session.exec(select(func.count()).select_from(query.subquery()))).one()
 
     # Pagination
-    items = session.exec(query.offset(skip).limit(limit)).all()
+    items = (await session.exec(query.offset(skip).limit(limit))).all()
 
     return PaginatedResponse(items=items, total=total)
