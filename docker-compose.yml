@@ -121,6 +121,15 @@ services:
     ports:
       - "80:80"
 
+  docs:
+    profiles: ["docs"]
+    image: squidfunk/mkdocs-material
+    volumes:
+      - .:/docs
+    ports:
+      - "8008:8000"
+    command: serve -f docs/mkdocs.yml -a 0.0.0.0:8000
+
 volumes:
   postgres_data:
   influxdb_data:

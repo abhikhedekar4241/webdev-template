@@ -1,95 +1,70 @@
-# Project Overview
-You are an expert full-stack developer. Your task is to generate a production-ready, full-stack boilerplate template. This template will be used to clone and build future AI-assisted web applications. 
+# Architecture Overview
 
-The stack is strictly defined as:
-* **Frontend:** Next.js 14+ (App Router), TypeScript, Tailwind CSS, shadcn/ui.
-* **Backend:** FastAPI (Python 3.11+), SQLModel, Pydantic.
-* **Database:** PostgreSQL.
-* **Infrastructure:** Docker & Docker Compose.
+This document provides a high-level overview of the project's architecture, data flow, and authentication model.
 
-You must follow industry-standard folder structures and write clean, strongly-typed, fully documented code.
+## Core Stack
+
+- **Frontend:** Next.js 14+ (App Router), TypeScript, Tailwind CSS, shadcn/ui.
+- **Backend:** FastAPI (Python 3.11+), SQLModel (SQLAlchemy 2.0 + Pydantic), Pydantic v2.
+- **Database:** PostgreSQL 16.
+- **Async Tasks:** Celery + Redis.
+- **Monitoring/Observability:** InfluxDB 2 + Grafana.
+- **Object Storage:** MinIO (S3-compatible).
+- **Deployment:** Kamal.
+
+## System Components
+
+### 1. Frontend (Next.js)
+The frontend is a React application built with the Next.js App Router. It uses `tanstack/react-query` for data fetching and caching, and `zustand` for client-side state management.
+
+### 2. Backend (FastAPI)
+The backend provides a RESTful API. It uses `SQLModel` for ORM, which allows for shared models between the database and the API schemas (via Pydantic).
+
+### 3. Worker (Celery)
+Background tasks (like sending emails or processing files) are handled by Celery workers, using Redis as a message broker.
+
+### 4. Database (PostgreSQL)
+The primary relational database. Migrations are managed by Alembic.
+
+### 5. Reverse Proxy (Nginx)
+In production/local-docker development, Nginx routes requests to either the frontend or the backend.
 
 ---
 
-## 1. Infrastructure & Docker (Do this first)
-Create a root directory structure that separates the frontend and backend. Tie them together using a `docker-compose.yml` file at the root.
+## Data Flow
 
-* **Root Files:** `.gitignore`, `README.md`, `docker-compose.yml`, `.env.example`.
-* **Services in Docker Compose:**
-    * `db`: PostgreSQL 16 image. Expose port 5432. Include health checks.
-    * `backend`: Build from `./backend/Dockerfile`. Expose port 8000. Depends on `db`.
-    * `frontend`: Build from `./frontend/Dockerfile`. Expose port 3000. Depends on `backend`.
-* **Networking:** Ensure the frontend container can communicate with the backend container via `http://backend:8000` internally, while exposing `localhost:8000` to the host machine.
+### Request Lifecycle
+1.  **Client** makes a request to `example.com`.
+2.  **Nginx** receives the request:
+    - Path starting with `/api` or `/docs` is routed to the **Backend (FastAPI)**.
+    - Other paths are routed to the **Frontend (Next.js)**.
+3.  **Backend** processes the request:
+    - Validates input using Pydantic.
+    - Interacts with **PostgreSQL** via SQLModel.
+    - If needed, pushes a task to **Redis**.
+4.  **Celery Worker** picks up the task from Redis and executes it.
+
+### Observability Flow
+- **Backend** sends metrics/logs to **InfluxDB**.
+- **Grafana** visualizes data stored in InfluxDB.
 
 ---
 
-## 2. Frontend Specifications (Next.js)
-Initialize a Next.js project inside the `./frontend` directory. 
+## Authentication & Authorization
 
-**Configuration:**
-* Use App Router (`src/app`).
-* Use TypeScript (`tsconfig.json` with strict mode enabled).
-* Configure Tailwind CSS (`tailwind.config.ts`, `globals.css`).
-* Configure ESLint and Prettier. Ensure Prettier auto-formats Tailwind classes using `prettier-plugin-tailwindcss`.
+### Flow
+1.  **User Login:** User submits credentials to `/api/v1/auth/login`.
+2.  **JWT Issuance:** Backend validates credentials and returns a JSON Web Token (JWT).
+3.  **Client Storage:** The frontend stores the JWT (typically in a secure cookie or local storage).
+4.  **Authenticated Requests:** The frontend includes the JWT in the `Authorization: Bearer <token>` header for subsequent API calls.
+5.  **Backend Validation:** FastAPI's dependency injection system (`Depends(get_current_user)`) validates the JWT and provides the user object to the route handler.
 
-**UI & Components (shadcn/ui):**
-* Initialize `shadcn/ui` configuration (`components.json`).
-* **Folder Structure Rule:** * Place raw, generated shadcn components strictly in `src/components/ui/` (e.g., `button.tsx`, `dialog.tsx`).
-    * Create a separate folder `src/components/shared/` for composite components that reuse the base UI library (e.g., `Navbar.tsx`, `DataTable.tsx`). Do not mix business logic components with base UI components.
+### Roles & Permissions
+- **Superuser:** Can access admin-level endpoints.
+- **Org Owner/Member:** Granular permissions within an organization.
 
-**Directory Structure:**
-```text
-frontend/
-├── src/
-│   ├── app/              # Routes, pages, layouts, error handling
-│   ├── components/
-│   │   ├── ui/           # Base shadcn/ui components (Do not modify heavily)
-│   │   └── shared/       # Composite components built from ui/ elements
-│   ├── lib/              # Utility functions (e.g., utils.ts for Tailwind merge)
-│   ├── hooks/            # Custom React hooks
-│   ├── services/         # API call wrappers fetching from FastAPI
-│   └── types/            # Global TypeScript interfaces/types
-├── Dockerfile            # Multi-stage build for Next.js
-├── tailwind.config.ts
-├── next.config.mjs
-└── package.json
-```
+---
 
-## 3. Backend Specifications (FastAPI)
-Initialize a Python project inside the ./backend directory.
+## Folder Structure
 
-Configuration:
-
-Use requirements.txt or pyproject.toml for dependency management.
-
-Include: fastapi, uvicorn, sqlmodel, psycopg2-binary, pydantic-settings, alembic (for migrations), ruff (for linting and formatting).
-
-Implement a global exception handler and CORS middleware allowing requests from http://localhost:3000.
-
-Directory Structure:
-
-Plaintext
-backend/
-├── app/
-│   ├── main.py           # FastAPI application instance & routing
-│   ├── api/              # API routers/endpoints (e.g., /api/v1/users)
-│   ├── core/             # Config, security, database connection (config.py, db.py)
-│   ├── models/           # SQLModel database models & Pydantic schemas
-│   ├── services/         # Business logic (kept out of route handlers)
-│   └── utils/            # Helper functions
-├── alembic/              # Database migration scripts
-├── Dockerfile            # Python slim-buster image setup
-├── requirements.txt
-└── alembic.ini
-
-
-## 4. Execution Steps
-Do not generate all files in a single response. Execute this prompt in the following order, waiting for my confirmation between steps:
-
-Step 1: Generate the root .env.example and docker-compose.yml.
-
-Step 2: Generate the frontend/Dockerfile and the complete Next.js folder structure, including configuration files (package.json, tailwind.config.ts, eslint and prettier configs, components.json).
-
-Step 3: Generate the backend/Dockerfile and the complete FastAPI folder structure, including requirements.txt, main.py, and the database connection logic using SQLModel.
-
-Step 4: Provide the terminal commands required to boot the entire system up from scratch.
+Refer to the project-specific READMEs in `/backend` and `/frontend` for detailed directory breakdowns.

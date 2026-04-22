@@ -1,4 +1,5 @@
 site_name: Boilerplate SaaS
+docs_dir: '.'
 site_description: A production-ready SaaS template with FastAPI and Next.js.
 theme:
   name: material
