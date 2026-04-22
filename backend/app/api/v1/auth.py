@@ -188,6 +188,7 @@ def google_callback(
     _error_redirect = RedirectResponse(
         f"{settings.FRONTEND_URL}/auth/login?error=oauth_failed"
     )
+    _error_redirect.delete_cookie("oauth_state")
 
     if error or not code or not state:
         return _error_redirect
@@ -251,10 +252,10 @@ def google_callback(
             session.add(oauth_account)
             session.commit()
 
-    if not user:
+    if not user or not user.is_active:
         return _error_redirect
 
-    jwt = create_access_token(str(user.id))
-    response = RedirectResponse(f"{settings.FRONTEND_URL}/auth/callback?token={jwt}")
+    token = create_access_token(str(user.id))
+    response = RedirectResponse(f"{settings.FRONTEND_URL}/auth/callback?token={token}")
     response.delete_cookie("oauth_state")
     return response

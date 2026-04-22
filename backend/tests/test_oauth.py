@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import select
 
@@ -125,3 +124,30 @@ def test_google_callback_uses_existing_oauth_account(client: TestClient, session
             )
     assert resp.status_code in (302, 307)
     assert "/auth/callback?token=" in resp.headers["location"]
+
+
+def test_google_callback_inactive_user_redirects_to_error(client: TestClient, session):
+    user = auth_service.create_user(
+        session,
+        email="inactive@example.com",
+        password="password123",
+        full_name="Inactive",
+        is_verified=True,
+    )
+    user.is_active = False
+    session.add(user)
+    session.commit()
+
+    client.cookies.set("oauth_state", "state123")
+    with patch("app.api.v1.auth.oauth_service.exchange_code", return_value=_google_token()):
+        with patch(
+            "app.api.v1.auth.oauth_service.get_google_user_info",
+            return_value=_google_user(email=user.email),
+        ):
+            resp = client.get(
+                "/api/v1/auth/google/callback",
+                params={"code": "fake_code", "state": "state123"},
+                follow_redirects=False,
+            )
+    assert resp.status_code in (302, 307)
+    assert "oauth_failed" in resp.headers["location"]
