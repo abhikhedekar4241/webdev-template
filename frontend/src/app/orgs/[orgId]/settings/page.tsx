@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2, Key, Copy, Check } from "lucide-react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useOrg, useUpdateOrg, useDeleteOrg } from "@/queries/orgs";
+import { useApiKeys, useCreateApiKey, useRevokeApiKey } from "@/queries/apiKeys";
+import type { ApiKeyCreated } from "@/services/apiKeys";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -16,6 +19,145 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
+
+function ApiKeysSection({ orgId }: { orgId: string }) {
+  const { data: keys = [], isLoading } = useApiKeys(orgId);
+  const createKey = useCreateApiKey(orgId);
+  const revokeKey = useRevokeApiKey(orgId);
+
+  const [newKeyName, setNewKeyName] = useState("");
+  const [createdKey, setCreatedKey] = useState<ApiKeyCreated | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newKeyName.trim()) return;
+    try {
+      const result = await createKey.mutateAsync(newKeyName.trim());
+      setCreatedKey(result);
+      setNewKeyName("");
+    } catch {
+      // error handled in mutation
+    }
+  }
+
+  function handleCopy() {
+    if (!createdKey) return;
+    navigator.clipboard.writeText(createdKey.key);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  function handleDismiss() {
+    setCreatedKey(null);
+    setCopied(false);
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-card shadow-sm">
+      <div className="border-b border-border px-5 py-4">
+        <h2 className="font-semibold">API Keys</h2>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Keys authenticate as the key creator with full org access.
+        </p>
+      </div>
+      <div className="p-5 space-y-4">
+        {/* Create form */}
+        {!createdKey && (
+          <form onSubmit={handleCreate} className="flex gap-2">
+            <input
+              value={newKeyName}
+              onChange={(e) => setNewKeyName(e.target.value)}
+              placeholder="Key name (e.g. CI/CD)"
+              className="flex h-9 flex-1 rounded-lg border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+            <button
+              type="submit"
+              disabled={createKey.isPending || !newKeyName.trim()}
+              className="flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              <Key className="h-3.5 w-3.5" />
+              {createKey.isPending ? "Creating…" : "Create"}
+            </button>
+          </form>
+        )}
+
+        {/* Show newly created key — one time only */}
+        {createdKey && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3 dark:border-amber-800 dark:bg-amber-950/30">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+              Copy your key now — it won&apos;t be shown again.
+            </p>
+            <div className="flex gap-2">
+              <input
+                readOnly
+                value={createdKey.key}
+                className="flex h-9 flex-1 rounded-lg border border-input bg-background px-3 font-mono text-xs focus-visible:outline-none"
+              />
+              <button
+                onClick={handleCopy}
+                className="flex h-9 items-center gap-1.5 rounded-lg border border-input bg-background px-3 text-sm hover:bg-muted"
+              >
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-green-600" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
+            <button
+              onClick={handleDismiss}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Done — dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Key list */}
+        {isLoading ? (
+          <div className="space-y-2">
+            {[1, 2].map((i) => (
+              <div key={i} className="h-10 animate-pulse rounded-lg bg-muted" />
+            ))}
+          </div>
+        ) : keys.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No API keys yet.</p>
+        ) : (
+          <div className="divide-y divide-border rounded-lg border border-border">
+            {keys.map((key) => (
+              <div
+                key={key.id}
+                className="flex items-center justify-between px-4 py-3"
+              >
+                <div>
+                  <p className="text-sm font-medium">{key.name}</p>
+                  <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                    {key.key_prefix}…
+                    {key.last_used_at
+                      ? ` · last used ${new Date(key.last_used_at).toLocaleDateString()}`
+                      : " · never used"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    if (confirm(`Revoke "${key.name}"? This cannot be undone.`)) {
+                      revokeKey.mutate(key.id);
+                    }
+                  }}
+                  className="rounded-md px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/10"
+                >
+                  Revoke
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function OrgSettingsPage({ params }: { params: { orgId: string } }) {
   const { orgId } = params;
@@ -103,6 +245,8 @@ export default function OrgSettingsPage({ params }: { params: { orgId: string } 
           </form>
         </div>
       </div>
+
+      <ApiKeysSection orgId={orgId} />
 
       {/* Danger zone */}
       <div className="rounded-xl border border-destructive/30 bg-card shadow-sm">
