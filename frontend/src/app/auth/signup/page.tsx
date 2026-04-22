@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LayoutDashboard, ArrowRight } from "lucide-react";
-import { useRegister, useLogin } from "@/queries/auth";
+import { useRegister } from "@/queries/auth";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -15,15 +15,13 @@ export default function SignupPage() {
   const [error, setError] = useState("");
 
   const register = useRegister();
-  const login = useLogin();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     try {
       await register.mutateAsync({ email, password, fullName });
-      await login.mutateAsync({ email, password });
-      router.push("/orgs");
+      router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data
@@ -32,7 +30,7 @@ export default function SignupPage() {
     }
   }
 
-  const isPending = register.isPending || login.isPending;
+  const isPending = register.isPending;
 
   return (
     <div className="flex min-h-screen">

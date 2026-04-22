@@ -9,7 +9,7 @@ import { useLogin } from "@/queries/auth";
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/orgs";
+  const redirect = searchParams.get("redirect") || "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +23,13 @@ export default function LoginPage() {
     try {
       await login.mutateAsync({ email, password });
       router.push(redirect);
-    } catch {
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      if (status === 403 && detail === "Email not verified") {
+        router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
+        return;
+      }
       setError("Invalid email or password");
     }
   }
