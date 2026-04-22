@@ -97,7 +97,7 @@ jobs:
           echo '```' >> issue_body.md
           cat backend/coverage_report.txt >> issue_body.md
           echo '```' >> issue_body.md
-          gh issue create --title "Low Coverage Alert: ${TOTAL}%" --body-file issue_body.md --label "bug,coverage"
+          gh issue create --title "Low Coverage Alert: ${TOTAL}%" --body-file issue_body.md --label "bug"
 
       - name: Check Test Result
         if: always()
