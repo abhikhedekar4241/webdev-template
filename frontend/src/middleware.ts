@@ -6,6 +6,8 @@ const PUBLIC_PATHS = [
   "/auth/signup",
   "/auth/forgot-password",
   "/auth/reset-password",
+  "/auth/verify-email",
+  "/auth/callback",
 ];
 
 export function middleware(request: NextRequest) {
