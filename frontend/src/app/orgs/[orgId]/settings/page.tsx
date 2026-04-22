@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { ArrowLeft, Trash2, Key, Copy, Check } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useOrg, useUpdateOrg, useDeleteOrg } from "@/queries/orgs";
@@ -28,6 +29,19 @@ function ApiKeysSection({ orgId }: { orgId: string }) {
   const [newKeyName, setNewKeyName] = useState("");
   const [createdKey, setCreatedKey] = useState<ApiKeyCreated | null>(null);
   const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      setCreatedKey(null);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -41,14 +55,36 @@ function ApiKeysSection({ orgId }: { orgId: string }) {
     }
   }
 
-  function handleCopy() {
+  async function handleCopy() {
     if (!createdKey) return;
-    navigator.clipboard.writeText(createdKey.key);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(createdKey.key);
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      setCopied(true);
+      copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for non-HTTPS or unsupported browsers
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = createdKey.key;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+        setCopied(true);
+        copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
+      } catch {
+        toast.error("Failed to copy key — please copy it manually.");
+      }
+    }
   }
 
   function handleDismiss() {
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
     setCreatedKey(null);
     setCopied(false);
   }
