@@ -1,0 +1,87 @@
+import uuid
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlmodel import Session
+
+from app.api.deps import get_current_user
+from app.core.db import get_session
+from app.models.org import OrgRole
+from app.models.user import User
+from app.services.api_keys import api_key_service
+from app.services.orgs import org_service
+
+router = APIRouter(prefix="/api/v1/orgs", tags=["api-keys"])
+
+
+class ApiKeyCreate(BaseModel):
+    name: str
+
+
+class ApiKeyResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    key_prefix: str
+    created_at: datetime
+    last_used_at: datetime | None
+    expires_at: datetime | None
+
+
+class ApiKeyCreated(ApiKeyResponse):
+    key: str  # full raw key — shown only once at creation time
+
+
+def _require_owner_or_admin(session: Session, org_id: uuid.UUID, user: User) -> None:
+    membership = org_service.get_membership(session, org_id=org_id, user_id=user.id)
+    if not membership or membership.role not in (OrgRole.owner, OrgRole.admin):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
+
+@router.post("/{org_id}/api-keys", response_model=ApiKeyCreated, status_code=201)
+def create_api_key(
+    org_id: uuid.UUID,
+    body: ApiKeyCreate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> ApiKeyCreated:
+    _require_owner_or_admin(session, org_id, current_user)
+    record, raw_key = api_key_service.create(
+        session, org_id=org_id, name=body.name, created_by=current_user.id
+    )
+    return ApiKeyCreated(
+        id=record.id,
+        name=record.name,
+        key_prefix=record.key_prefix,
+        created_at=record.created_at,
+        last_used_at=record.last_used_at,
+        expires_at=record.expires_at,
+        key=raw_key,
+    )
+
+
+@router.get("/{org_id}/api-keys", response_model=list[ApiKeyResponse])
+def list_api_keys(
+    org_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> list[ApiKeyResponse]:
+    membership = org_service.get_membership(
+        session, org_id=org_id, user_id=current_user.id
+    )
+    if not membership:
+        raise HTTPException(status_code=403, detail="Not a member of this organization")
+    return api_key_service.list_for_org(session, org_id=org_id)  # type: ignore[return-value]
+
+
+@router.delete("/{org_id}/api-keys/{key_id}", status_code=204)
+def revoke_api_key(
+    org_id: uuid.UUID,
+    key_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    _require_owner_or_admin(session, org_id, current_user)
+    revoked = api_key_service.revoke(session, key_id=key_id, org_id=org_id)
+    if not revoked:
+        raise HTTPException(status_code=404, detail="API key not found")

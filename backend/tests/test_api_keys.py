@@ -1,7 +1,9 @@
 import uuid
 
 import pytest
+from fastapi.testclient import TestClient
 
+from app.core.security import create_access_token
 from app.models.org import OrgRole
 from app.services.api_keys import ApiKeyService, _hash_key, api_key_service
 from app.services.auth import auth_service
@@ -90,3 +92,82 @@ def test_list_excludes_revoked(session, owner_and_org):
     api_key_service.revoke(session, key_id=record.id, org_id=org.id)
     keys = api_key_service.list_for_org(session, org_id=org.id)
     assert keys == []
+
+
+def _auth(user_id):
+    return {"Authorization": f"Bearer {create_access_token(str(user_id))}"}
+
+
+def test_create_key_via_api(client: TestClient, session, owner_and_org):
+    user, org = owner_and_org
+    resp = client.post(
+        f"/api/v1/orgs/{org.id}/api-keys",
+        json={"name": "CI/CD Key"},
+        headers=_auth(user.id),
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["key"].startswith("sk_live_")
+    assert data["key_prefix"] == data["key"][:10]
+    assert "key_hash" not in data  # hash must never be returned
+
+
+def test_list_keys_via_api(client: TestClient, session, owner_and_org):
+    user, org = owner_and_org
+    api_key_service.create(session, org_id=org.id, name="Key", created_by=user.id)
+    resp = client.get(f"/api/v1/orgs/{org.id}/api-keys", headers=_auth(user.id))
+    assert resp.status_code == 200
+    assert len(resp.json()) == 1
+    assert "key" not in resp.json()[0]  # full key must not appear in list
+
+
+def test_revoke_key_via_api(client: TestClient, session, owner_and_org):
+    user, org = owner_and_org
+    record, _ = api_key_service.create(
+        session, org_id=org.id, name="Key", created_by=user.id
+    )
+    resp = client.delete(
+        f"/api/v1/orgs/{org.id}/api-keys/{record.id}", headers=_auth(user.id)
+    )
+    assert resp.status_code == 204
+
+
+def test_api_key_authenticates_on_existing_endpoint(
+    client: TestClient, session, owner_and_org
+):
+    user, org = owner_and_org
+    _, raw_key = api_key_service.create(
+        session, org_id=org.id, name="Key", created_by=user.id
+    )
+    resp = client.get(
+        "/api/v1/auth/me", headers={"Authorization": f"Bearer {raw_key}"}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["email"] == user.email
+
+
+def test_member_cannot_create_key(client: TestClient, session, owner_and_org):
+    user, org = owner_and_org
+    member = auth_service.create_user(
+        session,
+        email="member_nokey@example.com",
+        password="password123",
+        full_name="Member",
+        is_verified=True,
+    )
+    org_service.add_member(session, org_id=org.id, user_id=member.id, role=OrgRole.member)
+    resp = client.post(
+        f"/api/v1/orgs/{org.id}/api-keys",
+        json={"name": "Key"},
+        headers=_auth(member.id),
+    )
+    assert resp.status_code == 403
+
+
+def test_revoke_nonexistent_key_returns_404(client: TestClient, session, owner_and_org):
+    user, org = owner_and_org
+    resp = client.delete(
+        f"/api/v1/orgs/{org.id}/api-keys/{uuid.uuid4()}",
+        headers=_auth(user.id),
+    )
+    assert resp.status_code == 404
