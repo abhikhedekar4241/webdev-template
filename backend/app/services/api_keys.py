@@ -59,6 +59,8 @@ class ApiKeyService(CRUDBase[OrgApiKey]):
         key = session.get(OrgApiKey, key_id)
         if not key or key.org_id != org_id:
             return False
+        if key.revoked_at is not None:
+            return True  # already revoked — preserve original timestamp
         key.revoked_at = datetime.utcnow()
         session.add(key)
         session.commit()

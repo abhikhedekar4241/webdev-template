@@ -29,7 +29,7 @@ def test_create_returns_record_and_raw_key(session, owner_and_org):
         session, org_id=org.id, name="CI key", created_by=user.id
     )
     assert raw_key.startswith("sk_live_")
-    assert len(raw_key) == 74  # "sk_live_" (8) + token_hex(32) = 64 hex chars
+    assert len(raw_key) == 74  # "sk_live_" (8) + token_hex(33) = 66 hex chars
     assert record.key_prefix == raw_key[:10]
     assert record.key_hash == _hash_key(raw_key)
     assert record.revoked_at is None
