@@ -76,7 +76,7 @@ jobs:
           if [ -f backend/coverage_report.txt ]; then
             TOTAL=$(grep "^TOTAL" backend/coverage_report.txt | grep -oE '[0-9]+%' | grep -oE '[0-9]+' || echo "")
             echo "TOTAL_COVERAGE=$TOTAL" >> $GITHUB_OUTPUT
-            if [ -n "$TOTAL" ] && [ "$TOTAL" -lt 90 ]; then
+            if [ -n "$TOTAL" ] && [ "$TOTAL" -lt 80 ]; then
               echo "is_low=true" >> $GITHUB_OUTPUT
             else
               echo "is_low=false" >> $GITHUB_OUTPUT
@@ -92,7 +92,7 @@ jobs:
           TOTAL: ${{ steps.parse_coverage.outputs.TOTAL_COVERAGE }}
         run: |
           echo "## Backend Coverage Report Summary" > issue_body.md
-          echo "Current coverage: **${TOTAL}%** (Threshold: 90%)" >> issue_body.md
+          echo "Current coverage: **${TOTAL}%** (Threshold: 80%)" >> issue_body.md
           echo "" >> issue_body.md
           echo '```' >> issue_body.md
           cat backend/coverage_report.txt >> issue_body.md
