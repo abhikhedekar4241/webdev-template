@@ -7,14 +7,26 @@ from sqlmodel import Session
 from app.core.db import get_session
 from app.core.security import decode_access_token
 from app.models.user import User
+from app.services.api_keys import api_key_service
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+_API_KEY_PREFIX = "sk_live_"
 
 
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     session: Session = Depends(get_session),
 ) -> User:
+    if token.startswith(_API_KEY_PREFIX):
+        key_record = api_key_service.authenticate(session, raw_key=token)
+        if not key_record:
+            raise HTTPException(status_code=401, detail="Invalid or revoked API key")
+        user = session.get(User, key_record.created_by)
+        if not user or not user.is_active:
+            raise HTTPException(status_code=401, detail="User not found or inactive")
+        return user
+
     user_id = decode_access_token(token)
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
