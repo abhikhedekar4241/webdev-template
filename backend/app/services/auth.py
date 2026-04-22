@@ -35,6 +35,8 @@ class AuthService(CRUDBase[User]):
         user = self.get_by_email(session, email=email)
         if not user:
             return None
+        if user.hashed_password is None:
+            return None  # OAuth-only account — no password login
         if not verify_password(password, user.hashed_password):
             return None
         return user
