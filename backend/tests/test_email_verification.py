@@ -100,8 +100,6 @@ def test_has_recent_otp_false_after_60s(session, unverified_user):
 
 # --- API tests ---
 
-from fastapi.testclient import TestClient
-
 
 def test_login_unverified_returns_403(client: TestClient, session):
     auth_service.create_user(

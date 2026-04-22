@@ -125,8 +125,9 @@ def resend_verification(
 ) -> dict:
     user = auth_service.get_by_email(session, email=body.email)
     # Always return 200 even if email not found (avoid user enumeration)
+    _RESEND_MSG = "If that email exists and is unverified, a new code was sent"
     if not user or user.is_verified:
-        return {"message": "If that email exists and is unverified, a new code was sent"}
+        return {"message": _RESEND_MSG}
     if verification_service.has_recent_otp(session, user_id=user.id):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -139,7 +140,7 @@ def resend_verification(
         template="verify_email",
         context={"full_name": user.full_name, "otp": otp_record.otp},
     )
-    return {"message": "Verification code sent"}
+    return {"message": _RESEND_MSG}
 
 
 @router.get("/me", response_model=UserResponse)
