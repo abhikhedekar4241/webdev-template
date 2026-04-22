@@ -18,7 +18,7 @@ depends_on = None
 
 def upgrade() -> None:
     # Make hashed_password nullable (Google-only users have no password)
-    op.alter_column("users", "hashed_password", nullable=True)
+    op.alter_column("users", "hashed_password", existing_type=sa.String(), nullable=True)
 
     # user_oauth_accounts
     op.create_table(
@@ -81,4 +81,4 @@ def downgrade() -> None:
         table_name="user_oauth_accounts",
     )
     op.drop_table("user_oauth_accounts")
-    op.alter_column("users", "hashed_password", nullable=False)
+    op.alter_column("users", "hashed_password", existing_type=sa.String(), nullable=False)

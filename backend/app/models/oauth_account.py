@@ -1,11 +1,15 @@
 import uuid
 from datetime import datetime
 
+import sqlalchemy as sa
 from sqlmodel import Field, SQLModel
 
 
 class UserOAuthAccount(SQLModel, table=True):
     __tablename__ = "user_oauth_accounts"
+    __table_args__ = (
+        sa.UniqueConstraint("provider", "provider_user_id", name="uq_oauth_provider_user"),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
