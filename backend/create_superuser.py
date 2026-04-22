@@ -1,25 +1,29 @@
 """Script to create a superuser."""
 import argparse
+import asyncio
+import sys
 
-from sqlmodel import Session
+sys.path.insert(0, "/app")
+
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.db import engine
 from app.services.auth import auth_service
 
 
-def create_superuser(email, password, full_name):
-    with Session(engine) as session:
-        user = auth_service.get_by_email(session, email=email)
+async def create_superuser(email, password, full_name):
+    async with AsyncSession(engine, expire_on_commit=False) as session:
+        user = await auth_service.get_by_email(session, email=email)
         if user:
             print(f"User with email {email} already exists. Promoting to superuser.")
             user.is_superuser = True
             user.is_verified = True
             session.add(user)
-            session.commit()
+            await session.commit()
             print(f"User {email} is now a superuser.")
             return
 
-        user = auth_service.create_user(
+        user = await auth_service.create_user(
             session,
             email=email,
             password=password,
@@ -28,7 +32,7 @@ def create_superuser(email, password, full_name):
         )
         user.is_superuser = True
         session.add(user)
-        session.commit()
+        await session.commit()
         print(f"Superuser created: {email}")
 
 if __name__ == "__main__":
@@ -38,4 +42,4 @@ if __name__ == "__main__":
     parser.add_argument("--full_name", required=True, help="Full name of the superuser")
 
     args = parser.parse_args()
-    create_superuser(args.email, args.password, args.full_name)
+    asyncio.run(create_superuser(args.email, args.password, args.full_name))

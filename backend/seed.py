@@ -1,10 +1,12 @@
 """Seed development data: 2 users, 1 org, roles, enough to develop against immediately."""
 
+import asyncio
 import sys
 
 sys.path.insert(0, "/app")
 
-from sqlmodel import Session, select
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.db import engine
 from app.models.invitation import OrgInvitation
@@ -27,14 +29,14 @@ USERS = [
 ]
 
 
-def seed():
-    with Session(engine) as session:
+async def seed():
+    async with AsyncSession(engine, expire_on_commit=False) as session:
         # Create users
         users = {}
         for u in USERS:
-            existing = auth_service.get_by_email(session, email=u["email"])
+            existing = await auth_service.get_by_email(session, email=u["email"])
             if not existing:
-                user = auth_service.create_user(
+                user = await auth_service.create_user(
                     session,
                     email=u["email"],
                     password=u["password"],
@@ -52,27 +54,27 @@ def seed():
         if not admin.is_verified:
             admin.is_verified = True
         session.add(admin)
-        session.commit()
-        session.refresh(admin)
+        await session.commit()
+        await session.refresh(admin)
 
         member = users["member@example.com"]
         if not member.is_verified:
             member.is_verified = True
         session.add(member)
-        session.commit()
-        session.refresh(member)
+        await session.commit()
+        await session.refresh(member)
 
         # Create org
 
-        existing_org = session.exec(
+        existing_org = (await session.exec(
             select(Organization).where(Organization.slug == "demo-org")
-        ).first()
+        )).first()
 
         if not existing_org:
-            org = org_service.create_org(
+            org = await org_service.create_org(
                 session, name="Demo Org", slug="demo-org", created_by=admin.id
             )
-            org_service.add_member(
+            await org_service.add_member(
                 session, org_id=org.id, user_id=member.id, role=OrgRole.member
             )
             print(
@@ -83,14 +85,14 @@ def seed():
             print("Org already exists: demo-org")
 
         # Create pending invitation for demonstration
-        existing_invite = session.exec(
+        existing_invite = (await session.exec(
             select(OrgInvitation).where(
                 OrgInvitation.invited_email == "invited@example.com"
             )
-        ).first()
+        )).first()
 
         if not existing_invite:
-            invitation_service.create_invitation(
+            await invitation_service.create_invitation(
                 session,
                 org_id=org.id,
                 invited_email="invited@example.com",
@@ -99,8 +101,10 @@ def seed():
             )
             print("Created pending invitation for: invited@example.com")
 
+        await session.commit()
+
     print("Seed complete.")
 
 
 if __name__ == "__main__":
-    seed()
+    asyncio.run(seed())

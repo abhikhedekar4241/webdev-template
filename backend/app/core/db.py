@@ -10,7 +10,7 @@ engine = create_async_engine(settings.DATABASE_URL, echo=False)
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncSession(engine) as session:
+    async with AsyncSession(engine, expire_on_commit=False) as session:
         yield session
 
 
