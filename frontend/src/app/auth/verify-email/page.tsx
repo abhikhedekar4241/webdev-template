@@ -113,7 +113,9 @@ export default function VerifyEmailPage() {
             {digits.map((digit, i) => (
               <input
                 key={i}
-                ref={(el) => { inputRefs.current[i] = el; }}
+                ref={(el) => {
+                  inputRefs.current[i] = el;
+                }}
                 type="text"
                 inputMode="numeric"
                 maxLength={1}
@@ -139,9 +141,7 @@ export default function VerifyEmailPage() {
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Didn&apos;t receive a code?{" "}
           {resendCooldown > 0 ? (
-            <span className="text-muted-foreground">
-              Resend in {resendCooldown}s
-            </span>
+            <span className="text-muted-foreground">Resend in {resendCooldown}s</span>
           ) : (
             <button
               onClick={handleResend}

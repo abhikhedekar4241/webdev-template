@@ -1,5 +1,5 @@
-import pytest
 from httpx import AsyncClient
+
 
 async def test_health_returns_ok(client: AsyncClient):
     response = await client.get("/api/v1/health")
@@ -25,7 +25,9 @@ async def test_health_has_request_id_header(client: AsyncClient):
 
 async def test_health_returns_503_when_db_fails(client: AsyncClient):
     from unittest.mock import AsyncMock
+
     from sqlmodel.ext.asyncio.session import AsyncSession
+
     from app.core.db import get_session
     from app.main import app as fastapi_app
 

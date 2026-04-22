@@ -18,7 +18,9 @@ class CRUDBase(Generic[ModelType]):
     async def get_multi(
         self, session: AsyncSession, *, skip: int = 0, limit: int = 100
     ) -> list[ModelType]:
-        return list((await session.exec(select(self.model).offset(skip).limit(limit))).all())
+        return list(
+            (await session.exec(select(self.model).offset(skip).limit(limit))).all()
+        )
 
     async def create(self, session: AsyncSession, *, obj_in: SQLModel) -> ModelType:
         obj = self.model.model_validate(obj_in)

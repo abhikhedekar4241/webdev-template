@@ -11,7 +11,7 @@ from app.core.exceptions import (
     MemberAlreadyExistsError,
 )
 from app.models.invitation import InvitationStatus, OrgInvitation
-from app.models.org import OrgMembership, OrgRole, Organization
+from app.models.org import Organization, OrgRole
 from app.models.user import User
 from app.services.auth import auth_service
 from app.services.base import CRUDBase
@@ -42,13 +42,15 @@ class InvitationService(CRUDBase[OrgInvitation]):
                 raise MemberAlreadyExistsError()
 
         # Check for an existing pending invitation
-        existing_invite = (await session.exec(
-            select(OrgInvitation).where(
-                OrgInvitation.org_id == org_id,
-                OrgInvitation.invited_email == invited_email,
-                OrgInvitation.status == InvitationStatus.pending,
+        existing_invite = (
+            await session.exec(
+                select(OrgInvitation).where(
+                    OrgInvitation.org_id == org_id,
+                    OrgInvitation.invited_email == invited_email,
+                    OrgInvitation.status == InvitationStatus.pending,
+                )
             )
-        )).first()
+        ).first()
         if existing_invite:
             raise InvitationAlreadyExistsError()
 
@@ -91,11 +93,13 @@ class InvitationService(CRUDBase[OrgInvitation]):
         self, session: AsyncSession, email: str
     ) -> list[OrgInvitation]:
         return list(
-            (await session.exec(
-                select(OrgInvitation)
-                .where(OrgInvitation.invited_email == email)
-                .where(OrgInvitation.status == InvitationStatus.pending)
-            )).all()
+            (
+                await session.exec(
+                    select(OrgInvitation)
+                    .where(OrgInvitation.invited_email == email)
+                    .where(OrgInvitation.status == InvitationStatus.pending)
+                )
+            ).all()
         )
 
     async def accept_invitation(
@@ -103,16 +107,16 @@ class InvitationService(CRUDBase[OrgInvitation]):
     ) -> None:
         if invitation.invited_email != user.email:
             raise InvitationInvalidError("This invitation is not for you")
-        
+
         if invitation.status != InvitationStatus.pending:
             raise InvitationInvalidError("Invitation is no longer pending")
-            
+
         if invitation.expires_at < datetime.now(UTC):
             raise InvitationInvalidError("Invitation has expired")
 
         invitation.status = InvitationStatus.accepted
         session.add(invitation)
-        
+
         await org_service.add_member(
             session,
             org_id=invitation.org_id,
@@ -120,34 +124,38 @@ class InvitationService(CRUDBase[OrgInvitation]):
             role=invitation.role,
         )
         await session.flush()
-        
+
         logger.info(
             "invitation_accepted",
             invitation_id=str(invitation.id),
             user_id=str(user.id),
             org_id=str(invitation.org_id),
         )
-        
-        await self.cleanup_notification(session, invitation_id=invitation.id, user_id=user.id)
+
+        await self.cleanup_notification(
+            session, invitation_id=invitation.id, user_id=user.id
+        )
 
     async def decline_invitation(
         self, session: AsyncSession, *, invitation: OrgInvitation, user: User
     ) -> None:
         if invitation.invited_email != user.email:
             raise InvitationInvalidError("This invitation is not for you")
-            
+
         invitation.status = InvitationStatus.declined
         session.add(invitation)
         await session.flush()
-        
+
         logger.info(
             "invitation_declined",
             invitation_id=str(invitation.id),
             user_id=str(user.id),
             org_id=str(invitation.org_id),
         )
-        
-        await self.cleanup_notification(session, invitation_id=invitation.id, user_id=user.id)
+
+        await self.cleanup_notification(
+            session, invitation_id=invitation.id, user_id=user.id
+        )
 
     async def cleanup_notification(
         self, session: AsyncSession, *, invitation_id: uuid.UUID, user_id: uuid.UUID

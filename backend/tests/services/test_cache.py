@@ -1,8 +1,11 @@
-import pytest
-from unittest.mock import patch, MagicMock
-from app.services.cache import cache, _get_redis
-import app.services.cache
+from unittest.mock import MagicMock, patch
+
 import fakeredis
+import pytest
+
+import app.services.cache
+from app.services.cache import _get_redis, cache
+
 
 @pytest.fixture(autouse=True)
 def reset_redis_client():
@@ -10,6 +13,7 @@ def reset_redis_client():
     app.services.cache._redis_client = None
     yield
     app.services.cache._redis_client = None
+
 
 async def test_cache_hit_miss():
     fake_r = fakeredis.FakeRedis()
@@ -35,6 +39,7 @@ async def test_cache_hit_miss():
         assert my_func(6) == 12
         assert call_count == 2
 
+
 async def test_cache_redis_unavailable():
     with patch("app.services.cache._get_redis", return_value=None):
         call_count = 0
@@ -49,6 +54,7 @@ async def test_cache_redis_unavailable():
         assert my_func(10) == 10
         assert call_count == 2
 
+
 async def test_get_redis_success():
     mock_client = MagicMock()
     with patch("redis.from_url", return_value=mock_client):
@@ -56,26 +62,31 @@ async def test_get_redis_success():
         assert client == mock_client
         mock_client.ping.assert_called_once()
 
+
 async def test_get_redis_failure():
     with patch("redis.from_url", side_effect=Exception("Connection failed")):
         client = _get_redis()
         assert client is None
+
 
 async def test_get_redis_existing():
     mock_client = MagicMock()
     app.services.cache._redis_client = mock_client
     assert _get_redis() == mock_client
 
+
 async def test_cache_redis_error_during_get():
     fake_r = MagicMock()
     fake_r.get.side_effect = Exception("Redis error")
 
     with patch("app.services.cache._get_redis", return_value=fake_r):
+
         @cache()
         def my_func():
             return "ok"
 
         assert my_func() == "ok"
+
 
 async def test_cache_redis_error_during_set():
     fake_r = MagicMock()
@@ -83,6 +94,7 @@ async def test_cache_redis_error_during_set():
     fake_r.setex.side_effect = Exception("Redis error")
 
     with patch("app.services.cache._get_redis", return_value=fake_r):
+
         @cache()
         def my_func():
             return "ok"

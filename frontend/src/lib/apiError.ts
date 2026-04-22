@@ -1,6 +1,5 @@
 export function getApiError(err: unknown, fallback: string): string {
-  const detail = (err as { response?: { data?: { detail?: unknown } } })?.response
-    ?.data?.detail;
+  const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
 
   if (!detail) return fallback;
 

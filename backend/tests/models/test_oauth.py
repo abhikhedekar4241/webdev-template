@@ -1,5 +1,6 @@
-from app.models.oauth_account import UserOAuthAccount
 from app.models.api_key import OrgApiKey
+from app.models.oauth_account import UserOAuthAccount
+
 
 async def test_oauth_account_model_has_expected_fields():
     fields = UserOAuthAccount.model_fields

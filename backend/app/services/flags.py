@@ -27,11 +27,13 @@ class FlagsService:
     async def is_enabled(
         self, session: AsyncSession, *, org_id: uuid.UUID, flag_name: str
     ) -> bool:
-        override = (await session.exec(
-            select(FeatureFlagOverride)
-            .where(FeatureFlagOverride.org_id == org_id)
-            .where(FeatureFlagOverride.flag_name == flag_name)
-        )).first()
+        override = (
+            await session.exec(
+                select(FeatureFlagOverride)
+                .where(FeatureFlagOverride.org_id == org_id)
+                .where(FeatureFlagOverride.flag_name == flag_name)
+            )
+        ).first()
 
         if override is not None:
             return override.enabled
@@ -48,11 +50,13 @@ class FlagsService:
         flag_name: str,
         enabled: bool,
     ) -> FeatureFlagOverride:
-        existing = (await session.exec(
-            select(FeatureFlagOverride)
-            .where(FeatureFlagOverride.org_id == org_id)
-            .where(FeatureFlagOverride.flag_name == flag_name)
-        )).first()
+        existing = (
+            await session.exec(
+                select(FeatureFlagOverride)
+                .where(FeatureFlagOverride.org_id == org_id)
+                .where(FeatureFlagOverride.flag_name == flag_name)
+            )
+        ).first()
 
         if existing:
             existing.enabled = enabled

@@ -8,7 +8,9 @@ router = APIRouter(prefix="/api/v1")
 
 
 @router.get("/health")
-async def health_check(response: Response, session: AsyncSession = Depends(get_session)) -> dict:
+async def health_check(
+    response: Response, session: AsyncSession = Depends(get_session)
+) -> dict:
     try:
         await session.exec(text("SELECT 1"))
         db_status = "ok"

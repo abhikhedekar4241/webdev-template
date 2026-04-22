@@ -28,7 +28,7 @@ export function BarChart() {
               style={{ height: "60%" }}
             />
             {/* Tooltip */}
-            <span className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-foreground px-1.5 py-0.5 text-[10px] font-medium text-background opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-foreground px-1.5 py-0.5 text-[10px] font-medium text-background opacity-0 transition-opacity group-hover:opacity-100">
               {d.value}
             </span>
           </div>

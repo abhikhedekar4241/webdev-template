@@ -31,30 +31,41 @@ export default function NotificationsPage() {
           return (
             <div className="space-y-1">
               <p className="text-sm">
-                Invitation to join <span className="font-semibold">{notification.data.org_name}</span>.
+                Invitation to join{" "}
+                <span className="font-semibold">{notification.data.org_name}</span>.
               </p>
               <div className="flex items-center gap-2 text-xs font-medium">
-                {status === "accepted" && <span className="text-green-600 flex items-center gap-1">Accepted</span>}
-                {status === "declined" && <span className="text-red-600 flex items-center gap-1">Declined</span>}
+                {status === "accepted" && (
+                  <span className="flex items-center gap-1 text-green-600">Accepted</span>
+                )}
+                {status === "declined" && (
+                  <span className="flex items-center gap-1 text-red-600">Declined</span>
+                )}
                 {status === "expired" && <span className="text-amber-600">Expired</span>}
               </div>
             </div>
           );
         }
-        
+
         // Find the actual pending invitation to show the rich card
-        const invitation = invitations?.find(i => i.id === notification.data.invitation_id);
+        const invitation = invitations?.find((i) => i.id === notification.data.invitation_id);
         if (invitation) {
-          return <div className="mt-2"><InvitationCard invitation={invitation} /></div>;
+          return (
+            <div className="mt-2">
+              <InvitationCard invitation={invitation} />
+            </div>
+          );
         }
 
         return (
-          <p className="text-sm text-muted-foreground italic">
+          <p className="text-sm italic text-muted-foreground">
             This invitation to {notification.data.org_name} is no longer pending.
           </p>
         );
       default:
-        return <p className="text-sm">{String(notification.data?.message || "System notification.")}</p>;
+        return (
+          <p className="text-sm">{String(notification.data?.message || "System notification.")}</p>
+        );
     }
   }
 
@@ -72,7 +83,7 @@ export default function NotificationsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-sm text-muted-foreground">
             {unreadCount > 0 ? `You have ${unreadCount} unread messages.` : "Your inbox is clear."}
           </p>
         </div>
@@ -87,7 +98,7 @@ export default function NotificationsPage() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-4 animate-pulse">
+        <div className="animate-pulse space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-24 rounded-xl bg-muted" />
           ))}
@@ -98,12 +109,16 @@ export default function NotificationsPage() {
             <div
               key={notification.id}
               className={`group relative flex gap-4 rounded-xl border p-4 transition-all hover:bg-muted/30 ${
-                !notification.read_at ? "border-primary/20 bg-primary/5 shadow-sm" : "border-border bg-card"
+                !notification.read_at
+                  ? "border-primary/20 bg-primary/5 shadow-sm"
+                  : "border-border bg-card"
               }`}
             >
               <div
                 className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                  !notification.read_at ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                  !notification.read_at
+                    ? "bg-primary/20 text-primary"
+                    : "bg-muted text-muted-foreground"
                 }`}
               >
                 {getIcon(notification.type)}
@@ -111,7 +126,7 @@ export default function NotificationsPage() {
 
               <div className="flex-1 space-y-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                     {notification.type.replace("_", " ")}
                   </span>
                   <span className="text-[10px] text-muted-foreground">
@@ -124,7 +139,7 @@ export default function NotificationsPage() {
               {!notification.read_at && (
                 <button
                   onClick={() => markRead.mutate(notification.id)}
-                  className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-primary"
+                  className="absolute right-4 top-4 p-1 opacity-0 transition-opacity hover:text-primary group-hover:opacity-100"
                   title="Mark as read"
                 >
                   <Check className="h-4 w-4" />
@@ -134,13 +149,15 @@ export default function NotificationsPage() {
           ))}
 
           {notifications?.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 border-2 border-dashed rounded-2xl border-border">
-              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+            <div className="flex flex-col items-center justify-center space-y-4 rounded-2xl border-2 border-dashed border-border py-20 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
                 <Bell className="h-6 w-6 text-muted-foreground" />
               </div>
               <div>
                 <h3 className="font-semibold">No notifications</h3>
-                <p className="text-sm text-muted-foreground">We&apos;ll notify you when something important happens.</p>
+                <p className="text-sm text-muted-foreground">
+                  We&apos;ll notify you when something important happens.
+                </p>
               </div>
             </div>
           )}

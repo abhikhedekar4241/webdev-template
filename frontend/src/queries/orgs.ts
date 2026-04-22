@@ -39,8 +39,7 @@ export function useCreateOrg() {
   const setActiveOrg = useOrgStore((s) => s.setActiveOrg);
 
   return useMutation({
-    mutationFn: (data: { name: string; slug: string }) =>
-      orgsService.create(data),
+    mutationFn: (data: { name: string; slug: string }) => orgsService.create(data),
     onSuccess: (org) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.orgs.list });
       setActiveOrg({ id: org.id, name: org.name, slug: org.slug });
@@ -57,8 +56,7 @@ export function useUpdateOrg(orgId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { name?: string; slug?: string }) =>
-      orgsService.update(orgId, data),
+    mutationFn: (data: { name?: string; slug?: string }) => orgsService.update(orgId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.orgs.detail(orgId),

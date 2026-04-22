@@ -1,8 +1,8 @@
-import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import DateTime
 from sqlmodel import Field
+
 from app.models.base import SoftDeleteMixin, TimestampMixin, UUIDModel
 
 
@@ -18,4 +18,3 @@ class User(UUIDModel, TimestampMixin, SoftDeleteMixin, table=True):
     onboarding_completed_at: datetime | None = Field(
         sa_type=DateTime(timezone=True), default=None
     )
-

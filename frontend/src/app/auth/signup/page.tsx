@@ -24,8 +24,8 @@ export default function SignupPage() {
       router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err: unknown) {
       const msg =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data
-          ?.detail ?? "Registration failed";
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
+        "Registration failed";
       setError(msg);
     }
   }
@@ -45,16 +45,22 @@ export default function SignupPage() {
         </div>
         <div className="relative z-10 space-y-4">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs text-white">✓</div>
-            <p className="text-white/80 text-sm">Teams, roles &amp; permissions built-in</p>
+            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs text-white">
+              ✓
+            </div>
+            <p className="text-sm text-white/80">Teams, roles &amp; permissions built-in</p>
           </div>
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs text-white">✓</div>
-            <p className="text-white/80 text-sm">File uploads, audit logs &amp; feature flags</p>
+            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs text-white">
+              ✓
+            </div>
+            <p className="text-sm text-white/80">File uploads, audit logs &amp; feature flags</p>
           </div>
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs text-white">✓</div>
-            <p className="text-white/80 text-sm">Background jobs &amp; metrics out of the box</p>
+            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs text-white">
+              ✓
+            </div>
+            <p className="text-sm text-white/80">Background jobs &amp; metrics out of the box</p>
           </div>
         </div>
       </div>
@@ -72,9 +78,7 @@ export default function SignupPage() {
 
           <div className="mb-8">
             <h1 className="text-2xl font-bold">Create your account</h1>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              Get started in seconds
-            </p>
+            <p className="mt-1.5 text-sm text-muted-foreground">Get started in seconds</p>
           </div>
 
           {error && (
@@ -126,8 +130,12 @@ export default function SignupPage() {
               disabled={isPending}
               className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {isPending ? "Creating account…" : (
-                <>Create account <ArrowRight className="h-4 w-4" /></>
+              {isPending ? (
+                "Creating account…"
+              ) : (
+                <>
+                  Create account <ArrowRight className="h-4 w-4" />
+                </>
               )}
             </button>
           </form>

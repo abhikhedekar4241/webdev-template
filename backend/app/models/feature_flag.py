@@ -13,6 +13,5 @@ class FeatureFlagOverride(SQLModel, table=True):
     flag_name: str
     enabled: bool
     updated_at: datetime = Field(
-        sa_type=DateTime(timezone=True),
-        default_factory=lambda: datetime.now(UTC)
+        sa_type=DateTime(timezone=True), default_factory=lambda: datetime.now(UTC)
     )

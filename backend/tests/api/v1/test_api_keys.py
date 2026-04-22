@@ -1,9 +1,12 @@
 import uuid
+
 from fastapi.testclient import TestClient
-from tests.helpers import get_auth_header
+
 from app.models.org import OrgRole
 from app.services.api_keys import api_key_service
 from app.services.orgs import org_service
+from tests.helpers import get_auth_header
+
 
 async def test_create_key_via_api(client: TestClient, session, alice, alice_org):
     resp = await client.post(
@@ -19,8 +22,12 @@ async def test_create_key_via_api(client: TestClient, session, alice, alice_org)
 
 
 async def test_list_keys_via_api(client: TestClient, session, alice, alice_org):
-    await api_key_service.create(session, org_id=alice_org.id, name="Key", created_by=alice.id)
-    resp = await client.get(f"/api/v1/orgs/{alice_org.id}/api-keys", headers=get_auth_header(alice.id))
+    await api_key_service.create(
+        session, org_id=alice_org.id, name="Key", created_by=alice.id
+    )
+    resp = await client.get(
+        f"/api/v1/orgs/{alice_org.id}/api-keys", headers=get_auth_header(alice.id)
+    )
     assert resp.status_code == 200
     assert len(resp.json()) == 1
     assert "key" not in resp.json()[0]  # full key must not appear in list
@@ -31,7 +38,8 @@ async def test_revoke_key_via_api(client: TestClient, session, alice, alice_org)
         session, org_id=alice_org.id, name="Key", created_by=alice.id
     )
     resp = await client.delete(
-        f"/api/v1/orgs/{alice_org.id}/api-keys/{record.id}", headers=get_auth_header(alice.id)
+        f"/api/v1/orgs/{alice_org.id}/api-keys/{record.id}",
+        headers=get_auth_header(alice.id),
     )
     assert resp.status_code == 204
 
@@ -50,7 +58,9 @@ async def test_api_key_authenticates_on_existing_endpoint(
 
 
 async def test_member_cannot_create_key(client: TestClient, session, bob, alice_org):
-    await org_service.add_member(session, org_id=alice_org.id, user_id=bob.id, role=OrgRole.member)
+    await org_service.add_member(
+        session, org_id=alice_org.id, user_id=bob.id, role=OrgRole.member
+    )
     resp = await client.post(
         f"/api/v1/orgs/{alice_org.id}/api-keys",
         json={"name": "Key"},
@@ -59,7 +69,9 @@ async def test_member_cannot_create_key(client: TestClient, session, bob, alice_
     assert resp.status_code == 403
 
 
-async def test_revoke_nonexistent_key_returns_404(client: TestClient, session, alice, alice_org):
+async def test_revoke_nonexistent_key_returns_404(
+    client: TestClient, session, alice, alice_org
+):
     resp = await client.delete(
         f"/api/v1/orgs/{alice_org.id}/api-keys/{uuid.uuid4()}",
         headers=get_auth_header(alice.id),
@@ -67,10 +79,15 @@ async def test_revoke_nonexistent_key_returns_404(client: TestClient, session, a
     assert resp.status_code == 404
 
 
-async def test_revoke_already_revoked_key_returns_204(client: TestClient, session, alice, alice_org):
-    record, _ = await api_key_service.create(session, org_id=alice_org.id, name="Key", created_by=alice.id)
+async def test_revoke_already_revoked_key_returns_204(
+    client: TestClient, session, alice, alice_org
+):
+    record, _ = await api_key_service.create(
+        session, org_id=alice_org.id, name="Key", created_by=alice.id
+    )
     await api_key_service.revoke(session, key_id=record.id, org_id=alice_org.id)
     resp = await client.delete(
-        f"/api/v1/orgs/{alice_org.id}/api-keys/{record.id}", headers=get_auth_header(alice.id)
+        f"/api/v1/orgs/{alice_org.id}/api-keys/{record.id}",
+        headers=get_auth_header(alice.id),
     )
     assert resp.status_code == 204

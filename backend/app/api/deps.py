@@ -6,8 +6,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.db import get_session
 from app.core.security import decode_access_token
-from app.models.user import User
 from app.models.org import OrgRole
+from app.models.user import User
 from app.services.api_keys import api_key_service
 from app.services.orgs import org_service
 
@@ -62,7 +62,9 @@ async def require_role(
     session: AsyncSession, org_id: uuid.UUID, user_id: uuid.UUID, allowed: list[OrgRole]
 ):
     """Raise 403 if user doesn't have one of the allowed roles in the org."""
-    membership = await org_service.get_membership(session, org_id=org_id, user_id=user_id)
+    membership = await org_service.get_membership(
+        session, org_id=org_id, user_id=user_id
+    )
     if not membership or membership.role not in allowed:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     return membership

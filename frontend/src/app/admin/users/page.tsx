@@ -4,7 +4,12 @@ import * as React from "react";
 import { useAdminUsers, useImpersonate } from "@/queries/admin";
 import { UserCircle, ShieldCheck, Mail, LogIn } from "lucide-react";
 import { DataTable } from "@/components/shared/DataTable";
-import { ColumnDef, SortingState, PaginationState, ColumnFiltersState } from "@tanstack/react-table";
+import {
+  ColumnDef,
+  SortingState,
+  PaginationState,
+  ColumnFiltersState,
+} from "@tanstack/react-table";
 import { AdminUser } from "@/services/admin";
 import { Button } from "@/components/ui/button";
 
@@ -40,7 +45,11 @@ export default function AdminUsersPage() {
           return (
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
-                {user.is_superuser ? <ShieldCheck className="h-5 w-5" /> : <UserCircle className="h-5 w-5" />}
+                {user.is_superuser ? (
+                  <ShieldCheck className="h-5 w-5" />
+                ) : (
+                  <UserCircle className="h-5 w-5" />
+                )}
               </div>
               <div>
                 <div className="font-medium">{user.full_name}</div>
@@ -60,13 +69,15 @@ export default function AdminUsersPage() {
           const user = row.original;
           return (
             <div className="flex flex-col gap-1">
-              <span className={`inline-flex items-center w-fit rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                user.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-              }`}>
+              <span
+                className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                  user.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                }`}
+              >
                 {user.is_active ? "Active" : "Inactive"}
               </span>
               {!user.is_verified && (
-                <span className="text-[10px] text-amber-600 font-medium">Unverified email</span>
+                <span className="text-[10px] font-medium text-amber-600">Unverified email</span>
               )}
             </div>
           );
@@ -83,7 +94,9 @@ export default function AdminUsersPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  if (confirm(`Impersonate ${user.full_name}? Your current session will be replaced.`)) {
+                  if (
+                    confirm(`Impersonate ${user.full_name}? Your current session will be replaced.`)
+                  ) {
                     impersonate.mutate(user.id);
                   }
                 }}
@@ -107,7 +120,9 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">User Management</h2>
-        <p className="text-muted-foreground">Manage all registered users and impersonate accounts for debugging.</p>
+        <p className="text-muted-foreground">
+          Manage all registered users and impersonate accounts for debugging.
+        </p>
       </div>
 
       <DataTable

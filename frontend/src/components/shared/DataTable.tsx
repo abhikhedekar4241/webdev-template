@@ -65,15 +65,15 @@ export function DataTable<TData, TValue>({
       columnFilters,
     },
     onPaginationChange: (updater) => {
-      const nextState = typeof updater === 'function' ? updater(pagination) : updater;
+      const nextState = typeof updater === "function" ? updater(pagination) : updater;
       onPaginationChange(nextState);
     },
     onSortingChange: (updater) => {
-      const nextState = typeof updater === 'function' ? updater(sorting) : updater;
+      const nextState = typeof updater === "function" ? updater(sorting) : updater;
       onSortingChange(nextState);
     },
     onColumnFiltersChange: (updater) => {
-      const nextState = typeof updater === 'function' ? updater(columnFilters) : updater;
+      const nextState = typeof updater === "function" ? updater(columnFilters) : updater;
       onColumnFiltersChange(nextState);
     },
     getCoreRowModel: getCoreRowModel(),
@@ -106,7 +106,7 @@ export function DataTable<TData, TValue>({
                       placeholder={filter.placeholder || "Search..."}
                       value={value}
                       onChange={(e) => onChange(e.target.value)}
-                      className="pl-8 w-[250px]"
+                      className="w-[250px] pl-8"
                     />
                   </div>
                 )}
@@ -151,18 +151,13 @@ export function DataTable<TData, TValue>({
                         <div
                           className={
                             header.column.getCanSort()
-                              ? "flex items-center gap-2 cursor-pointer select-none"
+                              ? "flex cursor-pointer select-none items-center gap-2"
                               : ""
                           }
                           onClick={header.column.getToggleSortingHandler()}
                         >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                          {header.column.getCanSort() && (
-                            <ArrowUpDown className="h-4 w-4" />
-                          )}
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          {header.column.getCanSort() && <ArrowUpDown className="h-4 w-4" />}
                         </div>
                       )}
                     </TableHead>
@@ -174,10 +169,7 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={columns.length} className="h-24 text-center">
                   <div className="flex items-center justify-center gap-2">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                     Loading...
@@ -186,26 +178,17 @@ export function DataTable<TData, TValue>({
               </TableRow>
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
+                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={columns.length} className="h-24 text-center">
                   No results.
                 </TableCell>
               </TableRow>
@@ -226,7 +209,7 @@ export function DataTable<TData, TValue>({
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage() || isLoading}
           >
-            <ChevronLeft className="h-4 w-4 mr-2" />
+            <ChevronLeft className="mr-2 h-4 w-4" />
             Previous
           </Button>
           <Button
@@ -236,7 +219,7 @@ export function DataTable<TData, TValue>({
             disabled={!table.getCanNextPage() || isLoading}
           >
             Next
-            <ChevronRight className="h-4 w-4 ml-2" />
+            <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
       </div>

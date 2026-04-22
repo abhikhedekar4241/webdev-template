@@ -29,36 +29,40 @@ class OrgService(CRUDBase[Organization]):
         org = Organization(name=name, slug=slug, created_by=created_by)
         session.add(org)
         await session.flush()
-        
+
         membership = OrgMembership(
             org_id=org.id, user_id=created_by, role=OrgRole.owner
         )
         session.add(membership)
         await session.flush()
-        
+
         logger.info(
-            "org_created", 
-            org_id=str(org.id), 
+            "org_created",
+            org_id=str(org.id),
             org_slug=org.slug,
-            created_by=str(created_by)
+            created_by=str(created_by),
         )
         return org
 
-    async def get_by_slug(self, session: AsyncSession, *, slug: str) -> Organization | None:
-        return (await session.exec(
-            select(Organization).where(Organization.slug == slug)
-        )).first()
+    async def get_by_slug(
+        self, session: AsyncSession, *, slug: str
+    ) -> Organization | None:
+        return (
+            await session.exec(select(Organization).where(Organization.slug == slug))
+        ).first()
 
     async def list_user_orgs(
         self, session: AsyncSession, *, user_id: uuid.UUID
     ) -> list[Organization]:
         return list(
-            (await session.exec(
-                select(Organization)
-                .join(OrgMembership, OrgMembership.org_id == Organization.id)
-                .where(OrgMembership.user_id == user_id)
-                .where(Organization.deleted_at.is_(None))  # type: ignore[arg-type]
-            )).all()
+            (
+                await session.exec(
+                    select(Organization)
+                    .join(OrgMembership, OrgMembership.org_id == Organization.id)
+                    .where(OrgMembership.user_id == user_id)
+                    .where(Organization.deleted_at.is_(None))  # type: ignore[arg-type]
+                )
+            ).all()
         )
 
     async def get_org_for_member(
@@ -86,11 +90,13 @@ class OrgService(CRUDBase[Organization]):
     async def get_membership(
         self, session: AsyncSession, *, org_id: uuid.UUID, user_id: uuid.UUID
     ) -> OrgMembership | None:
-        return (await session.exec(
-            select(OrgMembership)
-            .where(OrgMembership.org_id == org_id)
-            .where(OrgMembership.user_id == user_id)
-        )).first()
+        return (
+            await session.exec(
+                select(OrgMembership)
+                .where(OrgMembership.org_id == org_id)
+                .where(OrgMembership.user_id == user_id)
+            )
+        ).first()
 
     async def update_org(
         self,
@@ -108,24 +114,30 @@ class OrgService(CRUDBase[Organization]):
 
         if name is not None:
             org.name = name
-            
+
         session.add(org)
         await session.flush()
         logger.info("org_updated", org_id=str(org.id), org_slug=org.slug)
         return org
 
-    async def soft_delete_org(self, session: AsyncSession, *, org: Organization) -> Organization:
+    async def soft_delete_org(
+        self, session: AsyncSession, *, org: Organization
+    ) -> Organization:
         org.deleted_at = datetime.now(UTC)
         session.add(org)
         await session.flush()
         logger.info("org_soft_deleted", org_id=str(org.id), org_slug=org.slug)
         return org
 
-    async def list_members(self, session: AsyncSession, *, org_id: uuid.UUID) -> list[OrgMembership]:
+    async def list_members(
+        self, session: AsyncSession, *, org_id: uuid.UUID
+    ) -> list[OrgMembership]:
         return list(
-            (await session.exec(
-                select(OrgMembership).where(OrgMembership.org_id == org_id)
-            )).all()
+            (
+                await session.exec(
+                    select(OrgMembership).where(OrgMembership.org_id == org_id)
+                )
+            ).all()
         )
 
     async def list_members_with_users(
@@ -133,11 +145,13 @@ class OrgService(CRUDBase[Organization]):
     ) -> list[tuple[OrgMembership, User]]:
         """Fix N+1 query problem by joining User."""
         return list(
-            (await session.exec(
-                select(OrgMembership, User)
-                .join(User, OrgMembership.user_id == User.id)
-                .where(OrgMembership.org_id == org_id)
-            )).all()
+            (
+                await session.exec(
+                    select(OrgMembership, User)
+                    .join(User, OrgMembership.user_id == User.id)
+                    .where(OrgMembership.org_id == org_id)
+                )
+            ).all()
         )
 
     async def add_member(
@@ -151,12 +165,7 @@ class OrgService(CRUDBase[Organization]):
         membership = OrgMembership(org_id=org_id, user_id=user_id, role=role)
         session.add(membership)
         await session.flush()
-        logger.info(
-            "member_added", 
-            org_id=str(org_id), 
-            user_id=str(user_id), 
-            role=role
-        )
+        logger.info("member_added", org_id=str(org_id), user_id=str(user_id), role=role)
         return membership
 
     async def change_role(
@@ -174,10 +183,7 @@ class OrgService(CRUDBase[Organization]):
         session.add(membership)
         await session.flush()
         logger.info(
-            "member_role_changed", 
-            org_id=str(org_id), 
-            user_id=str(user_id), 
-            role=role
+            "member_role_changed", org_id=str(org_id), user_id=str(user_id), role=role
         )
         return membership
 

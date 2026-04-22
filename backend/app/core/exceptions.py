@@ -1,5 +1,6 @@
 class AppError(Exception):
     """Base error for the application."""
+
     message: str = "An unexpected error occurred"
     status_code: int = 500
 
@@ -30,6 +31,7 @@ class ValidationError(AppError):
 
 
 # --- Domain Specific Exceptions ---
+
 
 class UserAlreadyExistsError(ConflictError):
     message = "A user with this email already exists"

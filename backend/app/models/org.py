@@ -3,7 +3,8 @@ import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import DateTime
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
+
 from app.models.base import SoftDeleteMixin, TimestampMixin, UUIDModel
 
 
@@ -28,7 +29,5 @@ class OrgMembership(UUIDModel, table=True):
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
     role: OrgRole = Field(default=OrgRole.member)
     joined_at: datetime = Field(
-        sa_type=DateTime(timezone=True),
-        default_factory=lambda: datetime.now(UTC)
+        sa_type=DateTime(timezone=True), default_factory=lambda: datetime.now(UTC)
     )
-

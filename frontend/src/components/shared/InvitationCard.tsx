@@ -35,12 +35,10 @@ export function InvitationCard({ invitation, onSuccess }: InvitationCardProps) {
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
           <Building2 className="h-5 w-5 text-primary" />
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
             <p className="font-semibold">{invitation.org_name}</p>
-            <Badge variant={invitation.role as Role}>
-              {ROLE_LABELS[invitation.role as Role]}
-            </Badge>
+            <Badge variant={invitation.role as Role}>{ROLE_LABELS[invitation.role as Role]}</Badge>
           </div>
           <p className="mt-0.5 text-sm text-muted-foreground">
             You&apos;ve been invited to join as a{" "}
@@ -50,8 +48,12 @@ export function InvitationCard({ invitation, onSuccess }: InvitationCardProps) {
             .
           </p>
           <div className="mt-2 flex items-center gap-1.5">
-            <Clock className={`h-3.5 w-3.5 ${expiringSoon ? "text-amber-500" : "text-muted-foreground"}`} />
-            <span className={`text-xs ${expiringSoon ? "text-amber-600 font-medium" : "text-muted-foreground"}`}>
+            <Clock
+              className={`h-3.5 w-3.5 ${expiringSoon ? "text-amber-500" : "text-muted-foreground"}`}
+            />
+            <span
+              className={`text-xs ${expiringSoon ? "font-medium text-amber-600" : "text-muted-foreground"}`}
+            >
               {daysLeft > 0
                 ? `Expires in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}`
                 : "Expires today"}

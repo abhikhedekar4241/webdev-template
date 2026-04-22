@@ -43,14 +43,18 @@ class ApiKeyService(CRUDBase[OrgApiKey]):
         await session.flush()
         return record, raw_key
 
-    async def list_for_org(self, session: AsyncSession, *, org_id: uuid.UUID) -> list[OrgApiKey]:
+    async def list_for_org(
+        self, session: AsyncSession, *, org_id: uuid.UUID
+    ) -> list[OrgApiKey]:
         return list(
-            (await session.exec(
-                select(OrgApiKey)
-                .where(OrgApiKey.org_id == org_id)
-                .where(OrgApiKey.revoked_at.is_(None))  # type: ignore[arg-type]
-                .order_by(OrgApiKey.created_at.desc())
-            )).all()
+            (
+                await session.exec(
+                    select(OrgApiKey)
+                    .where(OrgApiKey.org_id == org_id)
+                    .where(OrgApiKey.revoked_at.is_(None))  # type: ignore[arg-type]
+                    .order_by(OrgApiKey.created_at.desc())
+                )
+            ).all()
         )
 
     async def revoke(
@@ -66,13 +70,15 @@ class ApiKeyService(CRUDBase[OrgApiKey]):
         await session.flush()
         return True
 
-    async def authenticate(self, session: AsyncSession, *, raw_key: str) -> OrgApiKey | None:
+    async def authenticate(
+        self, session: AsyncSession, *, raw_key: str
+    ) -> OrgApiKey | None:
         """Verify a raw API key. Returns the record and updates last_used_at, or
         None if invalid/revoked/expired."""
         key_hash = _hash_key(raw_key)
-        key = (await session.exec(
-            select(OrgApiKey).where(OrgApiKey.key_hash == key_hash)
-        )).first()
+        key = (
+            await session.exec(select(OrgApiKey).where(OrgApiKey.key_hash == key_hash))
+        ).first()
         if not key:
             return None
         if key.revoked_at is not None:

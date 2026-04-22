@@ -43,7 +43,7 @@ export default function DashboardPage() {
   const pendingInvCount = invitations?.length ?? 0;
 
   return (
-    <div className="px-6 py-8 space-y-6 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -77,8 +77,12 @@ export default function DashboardPage() {
               <Mail className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-semibold text-sm">You have {pendingInvCount} pending invitation{pendingInvCount !== 1 ? "s" : ""}</p>
-              <p className="text-xs text-muted-foreground font-medium">Join an organization to start collaborating with your team.</p>
+              <p className="text-sm font-semibold">
+                You have {pendingInvCount} pending invitation{pendingInvCount !== 1 ? "s" : ""}
+              </p>
+              <p className="text-xs font-medium text-muted-foreground">
+                Join an organization to start collaborating with your team.
+              </p>
             </div>
           </div>
           <Link
@@ -92,22 +96,50 @@ export default function DashboardPage() {
 
       {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total users" value="2,847" change="12% vs last month" up icon={Users} color="bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400" />
-        <StatCard label="Monthly revenue" value="$48,295" change="8.1% vs last month" up icon={DollarSign} color="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400" />
-        <StatCard label="Active sessions" value="1,234" change="3.2% vs yesterday" up={false} icon={Activity} color="bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400" />
-        <StatCard label="New orders" value="384" change="5.4% vs last week" up icon={ShoppingCart} color="bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400" />
+        <StatCard
+          label="Total users"
+          value="2,847"
+          change="12% vs last month"
+          up
+          icon={Users}
+          color="bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400"
+        />
+        <StatCard
+          label="Monthly revenue"
+          value="$48,295"
+          change="8.1% vs last month"
+          up
+          icon={DollarSign}
+          color="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400"
+        />
+        <StatCard
+          label="Active sessions"
+          value="1,234"
+          change="3.2% vs yesterday"
+          up={false}
+          icon={Activity}
+          color="bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400"
+        />
+        <StatCard
+          label="New orders"
+          value="384"
+          change="5.4% vs last week"
+          up
+          icon={ShoppingCart}
+          color="bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400"
+        />
       </div>
 
       {/* Chart + Activity */}
       <div className="grid gap-4 lg:grid-cols-5">
         {/* Chart */}
-        <div className="lg:col-span-3 rounded-xl border border-border bg-card shadow-sm">
+        <div className="rounded-xl border border-border bg-card shadow-sm lg:col-span-3">
           <div className="flex items-center justify-between border-b border-border px-5 py-4">
             <div>
               <h2 className="font-semibold">Revenue overview</h2>
               <p className="text-xs text-muted-foreground">Monthly revenue for 2026</p>
             </div>
-            <button className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors">
+            <button className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted">
               <MoreHorizontal className="h-4 w-4" />
             </button>
           </div>
@@ -117,7 +149,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Activity feed */}
-        <div className="lg:col-span-2 rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm lg:col-span-2">
           <div className="flex items-center justify-between border-b border-border px-5 py-4">
             <div>
               <h2 className="font-semibold">Recent activity</h2>
@@ -132,7 +164,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Team table */}
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div>
             <h2 className="font-semibold">Team members</h2>

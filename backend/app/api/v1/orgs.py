@@ -117,7 +117,9 @@ async def list_members(
     current_user: User = Depends(get_current_user),
 ):
     await require_org(session, org_id, current_user.id)
-    memberships_with_users = await org_service.list_members_with_users(session, org_id=org_id)
+    memberships_with_users = await org_service.list_members_with_users(
+        session, org_id=org_id
+    )
     return [
         MembershipResponse(
             user_id=m.user_id,

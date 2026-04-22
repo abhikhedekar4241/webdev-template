@@ -16,8 +16,12 @@ router = APIRouter(prefix="/api/v1/orgs", tags=["api-keys"])
 logger = structlog.get_logger()
 
 
-async def _require_owner_or_admin(session: AsyncSession, org_id: uuid.UUID, user: User) -> None:
-    membership = await org_service.get_membership(session, org_id=org_id, user_id=user.id)
+async def _require_owner_or_admin(
+    session: AsyncSession, org_id: uuid.UUID, user: User
+) -> None:
+    membership = await org_service.get_membership(
+        session, org_id=org_id, user_id=user.id
+    )
     if not membership or membership.role not in (OrgRole.owner, OrgRole.admin):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 

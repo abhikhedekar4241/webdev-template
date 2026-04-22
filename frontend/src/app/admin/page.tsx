@@ -7,10 +7,12 @@ export default function AdminDashboard() {
   const { data: stats, isLoading } = useAdminStats();
 
   if (isLoading) {
-    return <div className="animate-pulse space-y-4">
-      <div className="h-32 bg-muted rounded-xl" />
-      <div className="h-64 bg-muted rounded-xl" />
-    </div>;
+    return (
+      <div className="animate-pulse space-y-4">
+        <div className="h-32 rounded-xl bg-muted" />
+        <div className="h-64 rounded-xl bg-muted" />
+      </div>
+    );
   }
 
   const formatBytes = (bytes: number) => {
@@ -22,9 +24,24 @@ export default function AdminDashboard() {
   };
 
   const statCards = [
-    { label: "Total Users", value: stats?.user_count, icon: Users, color: "text-blue-600 bg-blue-100" },
-    { label: "Total Organizations", value: stats?.org_count, icon: Building2, color: "text-purple-600 bg-purple-100" },
-    { label: "Storage Used", value: formatBytes(stats?.total_storage_bytes || 0), icon: HardDrive, color: "text-amber-600 bg-amber-100" },
+    {
+      label: "Total Users",
+      value: stats?.user_count,
+      icon: Users,
+      color: "text-blue-600 bg-blue-100",
+    },
+    {
+      label: "Total Organizations",
+      value: stats?.org_count,
+      icon: Building2,
+      color: "text-purple-600 bg-purple-100",
+    },
+    {
+      label: "Storage Used",
+      value: formatBytes(stats?.total_storage_bytes || 0),
+      icon: HardDrive,
+      color: "text-amber-600 bg-amber-100",
+    },
   ];
 
   return (
@@ -38,7 +55,7 @@ export default function AdminDashboard() {
         {statCards.map((card) => (
           <div key={card.label} className="rounded-xl border border-border bg-card p-6 shadow-sm">
             <div className="flex items-center gap-4">
-              <div className={`p-2 rounded-lg ${card.color}`}>
+              <div className={`rounded-lg p-2 ${card.color}`}>
                 <card.icon className="h-5 w-5" />
               </div>
               <div>
@@ -51,18 +68,18 @@ export default function AdminDashboard() {
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
-        <h3 className="font-semibold mb-4">System Status</h3>
+        <h3 className="mb-4 font-semibold">System Status</h3>
         <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">API Backend</span>
-            <span className="flex items-center gap-1.5 text-green-600 font-medium">
+            <span className="flex items-center gap-1.5 font-medium text-green-600">
               <span className="h-2 w-2 rounded-full bg-green-600" />
               Operational
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Database</span>
-            <span className="flex items-center gap-1.5 text-green-600 font-medium">
+            <span className="flex items-center gap-1.5 font-medium text-green-600">
               <span className="h-2 w-2 rounded-full bg-green-600" />
               Connected
             </span>

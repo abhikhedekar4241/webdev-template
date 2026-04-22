@@ -1,12 +1,15 @@
 import uuid
+
 from fastapi.testclient import TestClient
 from sqlmodel import Session
-from tests.helpers import get_auth_header
+
 from app.models.invitation import InvitationStatus
 from app.models.org import OrgRole
 from app.services.auth import auth_service
 from app.services.invitations import invitation_service
 from app.services.orgs import org_service
+from tests.helpers import get_auth_header
+
 
 async def test_create_invitation_as_owner(client: TestClient, alice, alice_org):
     resp = await client.post(
@@ -24,7 +27,9 @@ async def test_create_invitation_as_owner(client: TestClient, alice, alice_org):
     assert data["status"] == "pending"
 
 
-async def test_create_invitation_as_non_member_returns_403(client: TestClient, bob, alice_org):
+async def test_create_invitation_as_non_member_returns_403(
+    client: TestClient, bob, alice_org
+):
     resp = await client.post(
         "/api/v1/invitations/",
         json={
@@ -37,8 +42,12 @@ async def test_create_invitation_as_non_member_returns_403(client: TestClient, b
     assert resp.status_code == 403
 
 
-async def test_create_invitation_as_plain_member_returns_403(client: TestClient, bob, alice_org, session: Session):
-    await org_service.add_member(session, org_id=alice_org.id, user_id=bob.id, role=OrgRole.member)
+async def test_create_invitation_as_plain_member_returns_403(
+    client: TestClient, bob, alice_org, session: Session
+):
+    await org_service.add_member(
+        session, org_id=alice_org.id, user_id=bob.id, role=OrgRole.member
+    )
     resp = await client.post(
         "/api/v1/invitations/",
         json={
@@ -74,7 +83,9 @@ async def test_list_invitations_empty_for_no_pending(client: TestClient, alice):
     assert resp.json() == []
 
 
-async def test_accept_invitation_api(client: TestClient, alice, bob, alice_org, session: Session):
+async def test_accept_invitation_api(
+    client: TestClient, alice, bob, alice_org, session: Session
+):
     inv = await invitation_service.create_invitation(
         session,
         org_id=alice_org.id,
@@ -88,7 +99,9 @@ async def test_accept_invitation_api(client: TestClient, alice, bob, alice_org, 
     )
     assert resp.status_code == 200
     assert resp.json()["message"] == "Invitation accepted"
-    membership = await org_service.get_membership(session, org_id=alice_org.id, user_id=bob.id)
+    membership = await org_service.get_membership(
+        session, org_id=alice_org.id, user_id=bob.id
+    )
     assert membership is not None
 
 
@@ -112,7 +125,9 @@ async def test_accept_invitation_wrong_user_returns_403(
     assert resp.status_code == 403
 
 
-async def test_decline_invitation_api(client: TestClient, alice, bob, alice_org, session: Session):
+async def test_decline_invitation_api(
+    client: TestClient, alice, bob, alice_org, session: Session
+):
     inv = await invitation_service.create_invitation(
         session,
         org_id=alice_org.id,
@@ -141,22 +156,34 @@ async def test_accept_nonexistent_returns_404(client: TestClient, alice):
 async def test_duplicate_invitation_rejected(client: TestClient, alice, alice_org):
     resp1 = await client.post(
         "/api/v1/invitations/",
-        json={"org_id": str(alice_org.id), "email": "newbie@example.com", "role": "member"},
+        json={
+            "org_id": str(alice_org.id),
+            "email": "newbie@example.com",
+            "role": "member",
+        },
         headers=get_auth_header(alice.id),
     )
     assert resp1.status_code == 201
 
     resp2 = await client.post(
         "/api/v1/invitations/",
-        json={"org_id": str(alice_org.id), "email": "newbie@example.com", "role": "member"},
+        json={
+            "org_id": str(alice_org.id),
+            "email": "newbie@example.com",
+            "role": "member",
+        },
         headers=get_auth_header(alice.id),
     )
     assert resp2.status_code == 409
     assert "pending invitation" in resp2.json()["detail"].lower()
 
 
-async def test_invite_existing_member_rejected(client: TestClient, alice, bob, alice_org, session: Session):
-    await org_service.add_member(session, org_id=alice_org.id, user_id=bob.id, role=OrgRole.member)
+async def test_invite_existing_member_rejected(
+    client: TestClient, alice, bob, alice_org, session: Session
+):
+    await org_service.add_member(
+        session, org_id=alice_org.id, user_id=bob.id, role=OrgRole.member
+    )
     resp = await client.post(
         "/api/v1/invitations/",
         json={"org_id": str(alice_org.id), "email": bob.email, "role": "member"},

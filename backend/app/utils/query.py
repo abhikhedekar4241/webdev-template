@@ -8,9 +8,11 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 T = TypeVar("T", bound=SQLModel)
 
+
 class PaginatedResponse(BaseModel, Generic[T]):
     items: Sequence[T]
     total: int
+
 
 async def apply_pagination_sorting_filtering(
     session: AsyncSession,
@@ -42,6 +44,7 @@ async def apply_pagination_sorting_filtering(
 
         if filters:
             from sqlalchemy import or_
+
             query = query.where(or_(*filters))
 
     # Sorting

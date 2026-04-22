@@ -1,9 +1,7 @@
-import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session
 
-from tests.helpers import get_auth_header
 from app.models.user import User
+from tests.helpers import get_auth_header
 
 
 async def test_get_stats_superuser(client: TestClient, superuser: User):

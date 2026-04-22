@@ -1,10 +1,13 @@
 import io
 import uuid
 from unittest.mock import MagicMock, patch
+
 from fastapi.testclient import TestClient
 from sqlmodel import Session
-from tests.helpers import get_auth_header
+
 from app.services.files import FilesService, files_service
+from tests.helpers import get_auth_header
+
 
 def _mock_minio():
     mock = MagicMock()
@@ -13,6 +16,7 @@ def _mock_minio():
     mock.presigned_get_object.return_value = "https://minio.example.com/presigned"
     mock.remove_object.return_value = None
     return mock
+
 
 async def test_upload_file_as_member(client: TestClient, alice, alice_org):
     mock = _mock_minio()
@@ -32,7 +36,9 @@ async def test_upload_file_as_member(client: TestClient, alice, alice_org):
     assert data["content_type"] == "application/pdf"
 
 
-async def test_upload_file_as_non_member_returns_403(client: TestClient, bob, alice_org):
+async def test_upload_file_as_non_member_returns_403(
+    client: TestClient, bob, alice_org
+):
     mock = _mock_minio()
     with patch.object(
         FilesService, "_client", new_callable=property, fget=lambda self: mock
@@ -45,7 +51,9 @@ async def test_upload_file_as_non_member_returns_403(client: TestClient, bob, al
     assert resp.status_code == 403
 
 
-async def test_get_file_url_as_member(client: TestClient, alice, alice_org, session: Session):
+async def test_get_file_url_as_member(
+    client: TestClient, alice, alice_org, session: Session
+):
     f = await files_service.save_metadata(
         session,
         org_id=alice_org.id,
@@ -75,7 +83,9 @@ async def test_get_file_url_not_found(client: TestClient, alice):
     assert resp.status_code == 404
 
 
-async def test_delete_file_as_uploader(client: TestClient, alice, alice_org, session: Session):
+async def test_delete_file_as_uploader(
+    client: TestClient, alice, alice_org, session: Session
+):
     f = await files_service.save_metadata(
         session,
         org_id=alice_org.id,

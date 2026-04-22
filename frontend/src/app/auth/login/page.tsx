@@ -48,7 +48,8 @@ export default function LoginPage() {
         <div className="relative z-10">
           <blockquote className="space-y-2">
             <p className="text-xl font-medium leading-relaxed text-white/90">
-              &ldquo;The scaffolding that lets you ship your idea, not someone else&apos;s infrastructure.&rdquo;
+              &ldquo;The scaffolding that lets you ship your idea, not someone else&apos;s
+              infrastructure.&rdquo;
             </p>
           </blockquote>
         </div>
@@ -108,8 +109,12 @@ export default function LoginPage() {
               disabled={login.isPending}
               className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {login.isPending ? "Signing in…" : (
-                <>Sign in <ArrowRight className="h-4 w-4" /></>
+              {login.isPending ? (
+                "Signing in…"
+              ) : (
+                <>
+                  Sign in <ArrowRight className="h-4 w-4" />
+                </>
               )}
             </button>
           </form>

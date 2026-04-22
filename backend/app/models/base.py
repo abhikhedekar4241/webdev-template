@@ -13,9 +13,7 @@ class TimestampMixin(SQLModel):
 
 
 class SoftDeleteMixin(SQLModel):
-    deleted_at: datetime | None = Field(
-        sa_type=DateTime(timezone=True), default=None
-    )
+    deleted_at: datetime | None = Field(sa_type=DateTime(timezone=True), default=None)
 
 
 class UUIDModel(SQLModel):

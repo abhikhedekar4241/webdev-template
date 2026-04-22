@@ -5,7 +5,12 @@ import { useAdminOrgs } from "@/queries/admin";
 import { Building2, Globe, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { DataTable } from "@/components/shared/DataTable";
-import { ColumnDef, SortingState, PaginationState, ColumnFiltersState } from "@tanstack/react-table";
+import {
+  ColumnDef,
+  SortingState,
+  PaginationState,
+  ColumnFiltersState,
+} from "@tanstack/react-table";
 import { AdminOrg } from "@/services/admin";
 
 export default function AdminOrgsPage() {
@@ -43,7 +48,9 @@ export default function AdminOrgsPage() {
               <div>
                 <div className="font-medium">{org.name}</div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="font-mono text-[10px] bg-muted px-1 rounded">{org.id.slice(0, 8)}...</span>
+                  <span className="rounded bg-muted px-1 font-mono text-[10px]">
+                    {org.id.slice(0, 8)}...
+                  </span>
                 </div>
               </div>
             </div>
@@ -72,9 +79,7 @@ export default function AdminOrgsPage() {
                   <Calendar className="h-3 w-3" />
                   {format(new Date(org.created_at), "MMM d, yyyy")}
                 </div>
-                <div className="text-[10px] opacity-70">
-                  By: {org.created_by.slice(0, 8)}...
-                </div>
+                <div className="text-[10px] opacity-70">By: {org.created_by.slice(0, 8)}...</div>
               </div>
             </div>
           );

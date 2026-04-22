@@ -44,7 +44,9 @@ class FilesService(CRUDBase[File]):
             logger.error("minio_bucket_error", error=str(e))
             raise
 
-    def upload(self, *, data: BinaryIO, length: int, storage_key: str, content_type: str) -> None:
+    def upload(
+        self, *, data: BinaryIO, length: int, storage_key: str, content_type: str
+    ) -> None:
         self._ensure_bucket()
         self._client.put_object(
             settings.MINIO_BUCKET,
@@ -93,7 +95,9 @@ class FilesService(CRUDBase[File]):
         logger.info("file_metadata_saved", file_id=str(f.id), storage_key=storage_key)
         return f
 
-    async def get_active_file(self, session: AsyncSession, *, file_id: uuid.UUID) -> File | None:
+    async def get_active_file(
+        self, session: AsyncSession, *, file_id: uuid.UUID
+    ) -> File | None:
         f = await session.get(File, file_id)
         if f and f.deleted_at is None:
             return f

@@ -22,7 +22,9 @@ router = APIRouter(prefix="/api/v1/invitations", tags=["invitations"])
 logger = structlog.get_logger()
 
 
-async def _get_invitation_or_404(session: AsyncSession, inv_id: uuid.UUID) -> OrgInvitation:
+async def _get_invitation_or_404(
+    session: AsyncSession, inv_id: uuid.UUID
+) -> OrgInvitation:
     inv = await session.get(OrgInvitation, inv_id)
     if not inv:
         raise HTTPException(status_code=404, detail="Invitation not found")
@@ -35,7 +37,9 @@ async def create_invitation(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    await require_role(session, body.org_id, current_user.id, [OrgRole.owner, OrgRole.admin])
+    await require_role(
+        session, body.org_id, current_user.id, [OrgRole.owner, OrgRole.admin]
+    )
 
     org = await session.get(Organization, body.org_id)
     if not org:
@@ -86,7 +90,9 @@ async def list_invitations(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    invitations = await invitation_service.list_pending_for_email(session, current_user.email)
+    invitations = await invitation_service.list_pending_for_email(
+        session, current_user.email
+    )
 
     results = []
     for inv in invitations:
@@ -114,7 +120,9 @@ async def accept_invitation(
     current_user: User = Depends(get_current_user),
 ):
     inv = await _get_invitation_or_404(session, inv_id)
-    await invitation_service.accept_invitation(session, invitation=inv, user=current_user)
+    await invitation_service.accept_invitation(
+        session, invitation=inv, user=current_user
+    )
     await session.commit()
     return MessageResponse(message="Invitation accepted")
 
@@ -126,6 +134,8 @@ async def decline_invitation(
     current_user: User = Depends(get_current_user),
 ):
     inv = await _get_invitation_or_404(session, inv_id)
-    await invitation_service.decline_invitation(session, invitation=inv, user=current_user)
+    await invitation_service.decline_invitation(
+        session, invitation=inv, user=current_user
+    )
     await session.commit()
     return MessageResponse(message="Invitation declined")

@@ -100,7 +100,7 @@ function InviteForm({ orgId }: { orgId: string }) {
 export default function OrgMembersPage({ params }: { params: { orgSlug: string } }) {
   const { orgSlug } = params;
   const { data: org, isLoading: orgLoading } = useOrgBySlug(orgSlug);
-  
+
   const orgId = org?.id || "";
   const { data: members, isLoading: membersLoading } = useOrgMembers(orgId);
   const { mutate: removeMember, isPending: isRemoving } = useRemoveMember(orgId);
@@ -120,7 +120,7 @@ export default function OrgMembersPage({ params }: { params: { orgSlug: string }
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8 space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6 px-6 py-8">
       <Link
         href={`/orgs/${orgSlug}`}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
@@ -162,14 +162,14 @@ export default function OrgMembersPage({ params }: { params: { orgSlug: string }
                 className={`flex items-center gap-4 px-5 py-3.5 ${i > 0 ? "border-t border-border" : ""}`}
               >
                 <MemberAvatar name={m.full_name} />
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">
                     {m.full_name}
                     {isTargetMe && (
                       <span className="ml-1.5 text-xs text-muted-foreground">(you)</span>
                     )}
                   </p>
-                  <div className="flex items-center gap-2 mt-0.5">
+                  <div className="mt-0.5 flex items-center gap-2">
                     <p className="truncate text-xs text-muted-foreground">{m.email}</p>
                     <RoleBadge role={m.role as Role} />
                   </div>

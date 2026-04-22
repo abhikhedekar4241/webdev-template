@@ -1,6 +1,5 @@
 import pytest
-from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, create_engine
+from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel.pool import StaticPool
 
@@ -13,6 +12,7 @@ from app.services.orgs import org_service
 @pytest.fixture(name="session")
 async def session_fixture():
     from sqlalchemy.ext.asyncio import create_async_engine
+
     engine = create_async_engine(
         "sqlite+aiosqlite://",
         connect_args={"check_same_thread": False},
@@ -31,6 +31,7 @@ async def client_fixture(session: AsyncSession):
 
     app.dependency_overrides[get_session] = get_session_override
     from httpx import ASGITransport, AsyncClient
+
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:

@@ -97,7 +97,7 @@ function ApiKeysSection({ orgId }: { orgId: string }) {
           Keys authenticate as the key creator with full org access.
         </p>
       </div>
-      <div className="p-5 space-y-4">
+      <div className="space-y-4 p-5">
         {/* Create form */}
         {!createdKey && (
           <form onSubmit={handleCreate} className="flex gap-2">
@@ -120,7 +120,7 @@ function ApiKeysSection({ orgId }: { orgId: string }) {
 
         {/* Show newly created key — one time only */}
         {createdKey && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3 dark:border-amber-800 dark:bg-amber-950/30">
+          <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
             <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
               Copy your key now — it won&apos;t be shown again.
             </p>
@@ -163,10 +163,7 @@ function ApiKeysSection({ orgId }: { orgId: string }) {
         ) : (
           <div className="divide-y divide-border rounded-lg border border-border">
             {keys.map((key) => (
-              <div
-                key={key.id}
-                className="flex items-center justify-between px-4 py-3"
-              >
+              <div key={key.id} className="flex items-center justify-between px-4 py-3">
                 <div>
                   <p className="text-sm font-medium">{key.name}</p>
                   <p className="mt-0.5 font-mono text-xs text-muted-foreground">
@@ -232,7 +229,7 @@ export default function OrgSettingsPage({ params }: { params: { orgSlug: string 
   }
 
   return (
-    <div className="mx-auto max-w-lg px-6 py-8 space-y-6">
+    <div className="mx-auto max-w-lg space-y-6 px-6 py-8">
       <Link
         href={`/orgs/${orgSlug}`}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
@@ -259,19 +256,15 @@ export default function OrgSettingsPage({ params }: { params: { orgSlug: string 
                 className="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 {...register("name")}
               />
-              {errors.name && (
-                <p className="text-xs text-destructive">{errors.name.message}</p>
-              )}
+              {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">URL slug</label>
               <input
-                className="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring font-mono"
+                className="flex h-10 w-full rounded-lg border border-input bg-background px-3 font-mono text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 {...register("slug")}
               />
-              {errors.slug && (
-                <p className="text-xs text-destructive">{errors.slug.message}</p>
-              )}
+              {errors.slug && <p className="text-xs text-destructive">{errors.slug.message}</p>}
             </div>
             <button
               type="submit"

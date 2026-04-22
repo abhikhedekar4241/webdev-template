@@ -47,9 +47,12 @@ class NotificationService(CRUDBase[Notification]):
         await session.flush()
         return notification
 
-    async def mark_all_as_read(self, session: AsyncSession, *, user_id: uuid.UUID) -> None:
+    async def mark_all_as_read(
+        self, session: AsyncSession, *, user_id: uuid.UUID
+    ) -> None:
         statement = select(Notification).where(
-            Notification.user_id == user_id, Notification.read_at.is_(None)  # type: ignore
+            Notification.user_id == user_id,
+            Notification.read_at.is_(None),  # type: ignore
         )
         notifications = (await session.exec(statement)).all()
         now = datetime.now(UTC)

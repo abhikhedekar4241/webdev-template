@@ -1,12 +1,14 @@
 import uuid
+
 import pytest
-from sqlmodel import SQLModel, Field, select
+from sqlmodel import Field, SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
+
 from app.utils.pagination import paginate
 from app.utils.query import apply_pagination_sorting_filtering
 
-
 # --- Mock Model for Query Utils Tests ---
+
 
 class MockModel(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -19,7 +21,7 @@ class MockModel(SQLModel, table=True):
 async def query_session_fixture(session: AsyncSession):
     conn = await session.connection()
     await conn.run_sync(MockModel.__table__.create, checkfirst=True)
-    
+
     m1 = MockModel(name="Alice", email="alice@example.com", age=30)
     m2 = MockModel(name="Bob", email="bob@example.com", age=25)
     m3 = MockModel(name="Charlie", email="charlie@gmail.com", age=35)
@@ -73,7 +75,9 @@ async def test_apply_pagination_basic(query_session: AsyncSession):
 
 
 async def test_apply_pagination_skip_limit(query_session: AsyncSession):
-    result = await apply_pagination_sorting_filtering(query_session, MockModel, skip=1, limit=1)
+    result = await apply_pagination_sorting_filtering(
+        query_session, MockModel, skip=1, limit=1
+    )
     assert result.total == 3
     assert len(result.items) == 1
     assert result.items[0].name == "Bob"
@@ -81,10 +85,7 @@ async def test_apply_pagination_skip_limit(query_session: AsyncSession):
 
 async def test_apply_pagination_search(query_session: AsyncSession):
     result = await apply_pagination_sorting_filtering(
-        query_session, 
-        MockModel, 
-        search="alice", 
-        search_fields=["name", "email"]
+        query_session, MockModel, search="alice", search_fields=["name", "email"]
     )
     assert result.total == 1
     assert result.items[0].name == "Alice"
@@ -92,52 +93,39 @@ async def test_apply_pagination_search(query_session: AsyncSession):
 
 async def test_apply_pagination_search_multiple_fields(query_session: AsyncSession):
     result = await apply_pagination_sorting_filtering(
-        query_session, 
-        MockModel, 
-        search="example.com", 
-        search_fields=["email"]
+        query_session, MockModel, search="example.com", search_fields=["email"]
     )
     assert result.total == 2
 
 
 async def test_apply_pagination_sorting_asc(query_session: AsyncSession):
     result = await apply_pagination_sorting_filtering(
-        query_session, 
-        MockModel, 
-        sort_by="age", 
-        sort_order="asc"
+        query_session, MockModel, sort_by="age", sort_order="asc"
     )
-    assert result.items[0].name == "Bob" # 25
-    assert result.items[2].name == "Charlie" # 35
+    assert result.items[0].name == "Bob"  # 25
+    assert result.items[2].name == "Charlie"  # 35
 
 
 async def test_apply_pagination_sorting_desc(query_session: AsyncSession):
     result = await apply_pagination_sorting_filtering(
-        query_session, 
-        MockModel, 
-        sort_by="age", 
-        sort_order="desc"
+        query_session, MockModel, sort_by="age", sort_order="desc"
     )
-    assert result.items[0].name == "Charlie" # 35
-    assert result.items[2].name == "Bob" # 25
+    assert result.items[0].name == "Charlie"  # 35
+    assert result.items[2].name == "Bob"  # 25
 
 
 async def test_apply_pagination_base_query(query_session: AsyncSession):
     base = select(MockModel).where(MockModel.age > 28)
     result = await apply_pagination_sorting_filtering(
-        query_session, 
-        MockModel, 
-        base_query=base
+        query_session, MockModel, base_query=base
     )
-    assert result.total == 2 # Alice (30) and Charlie (35)
+    assert result.total == 2  # Alice (30) and Charlie (35)
 
 
 async def test_apply_pagination_invalid_sort_field(query_session: AsyncSession):
     # Should ignore invalid field and not crash
     result = await apply_pagination_sorting_filtering(
-        query_session, 
-        MockModel, 
-        sort_by="nonexistent"
+        query_session, MockModel, sort_by="nonexistent"
     )
     assert result.total == 3
 
@@ -145,9 +133,6 @@ async def test_apply_pagination_invalid_sort_field(query_session: AsyncSession):
 async def test_apply_pagination_invalid_search_field(query_session: AsyncSession):
     # Should ignore invalid field
     result = await apply_pagination_sorting_filtering(
-        query_session, 
-        MockModel, 
-        search="Alice", 
-        search_fields=["invalid"]
+        query_session, MockModel, search="Alice", search_fields=["invalid"]
     )
-    assert result.total == 3 # No filter applied
+    assert result.total == 3  # No filter applied

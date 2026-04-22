@@ -26,6 +26,8 @@ async def log_event(
         )
         session.add(entry)
         await session.flush()
-        logger.info("audit_event", audit_event=event, user_id=str(user_id), org_id=str(org_id))
+        logger.info(
+            "audit_event", audit_event=event, user_id=str(user_id), org_id=str(org_id)
+        )
     except Exception as exc:
         logger.error("audit_log_failed", audit_event=event, error=str(exc))

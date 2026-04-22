@@ -180,9 +180,7 @@ async def complete_onboarding(
 @router.get("/google")
 async def google_login(request: Request) -> RedirectResponse:
     if not settings.GOOGLE_CLIENT_ID:
-        raise HTTPException(
-            status_code=501, detail="Google OAuth is not configured"
-        )
+        raise HTTPException(status_code=501, detail="Google OAuth is not configured")
     state = secrets.token_hex(16)
     redirect_uri = f"{settings.BACKEND_URL}/api/v1/auth/google/callback"
     url = oauth_service.google_auth_url(redirect_uri, state)
@@ -225,12 +223,14 @@ async def google_callback(
     google_name: str = user_info.get("name", google_email)
 
     # 1. Existing OAuth account → log in directly
-    existing_oauth = (await session.exec(
-        select(UserOAuthAccount).where(
-            UserOAuthAccount.provider == "google",
-            UserOAuthAccount.provider_user_id == google_sub,
+    existing_oauth = (
+        await session.exec(
+            select(UserOAuthAccount).where(
+                UserOAuthAccount.provider == "google",
+                UserOAuthAccount.provider_user_id == google_sub,
+            )
         )
-    )).first()
+    ).first()
 
     if existing_oauth:
         user = await session.get(User, existing_oauth.user_id)

@@ -65,13 +65,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [orgs, activeOrg, setActiveOrg]);
 
   const initials = me?.full_name
-    ? me.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+    ? me.full_name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
     : "?";
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-border bg-card md:flex overflow-y-auto">
+      <aside className="hidden w-56 shrink-0 flex-col overflow-y-auto border-r border-border bg-card md:flex">
         {/* Logo */}
         <div className="flex h-14 items-center gap-2.5 border-b border-border px-4">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary shadow-sm">
@@ -92,9 +97,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   if (org) setActiveOrg({ id: org.id, name: org.name, slug: org.slug });
                 }}
               >
-                <option value="" disabled>Select workspace…</option>
+                <option value="" disabled>
+                  Select workspace…
+                </option>
                 {orgs.map((org) => (
-                  <option key={org.id} value={org.id}>{org.name}</option>
+                  <option key={org.id} value={org.id}>
+                    {org.name}
+                  </option>
                 ))}
               </select>
               <ChevronDown className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
@@ -125,7 +134,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Bottom nav */}
-        <div className="border-t border-border px-3 py-3 space-y-0.5">
+        <div className="space-y-0.5 border-t border-border px-3 py-3">
           {bottomItems.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
             return (
@@ -159,7 +168,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-0.5">
               <button
                 onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 aria-label="Toggle theme"
               >
                 <Sun className="h-3.5 w-3.5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -167,7 +176,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </button>
               <button
                 onClick={logout}
-                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 aria-label="Log out"
               >
                 <LogOut className="h-3.5 w-3.5" />
@@ -196,7 +205,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             <Link
               href="/notifications"
-              className="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <Bell className="h-4 w-4" />
               {unreadCount > 0 && (

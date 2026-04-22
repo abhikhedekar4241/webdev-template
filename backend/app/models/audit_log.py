@@ -11,9 +11,15 @@ class AuditLog(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     event: str = Field(index=True)
-    user_id: uuid.UUID | None = Field(default=None, foreign_key="users.id", nullable=True)
-    org_id: uuid.UUID | None = Field(default=None, foreign_key="organizations.id", nullable=True)
-    extra: dict[str, Any] = Field(default_factory=dict, sa_column=Column("metadata", JSON))
+    user_id: uuid.UUID | None = Field(
+        default=None, foreign_key="users.id", nullable=True
+    )
+    org_id: uuid.UUID | None = Field(
+        default=None, foreign_key="organizations.id", nullable=True
+    )
+    extra: dict[str, Any] = Field(
+        default_factory=dict, sa_column=Column("metadata", JSON)
+    )
     created_at: datetime = Field(
         sa_type=DateTime(timezone=True),
         default_factory=lambda: datetime.now(UTC),

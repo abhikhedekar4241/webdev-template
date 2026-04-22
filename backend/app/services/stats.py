@@ -20,7 +20,9 @@ class StatsService:
                 record=point,
             )
         except Exception as exc:
-            logger.warning("stats_write_failed", measurement=measurement, error=str(exc))
+            logger.warning(
+                "stats_write_failed", measurement=measurement, error=str(exc)
+            )
 
     async def inc(self, measurement: str, value: float = 1) -> None:
         await self._write(measurement, "count", value)

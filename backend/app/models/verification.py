@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import DateTime
 from sqlmodel import Field, SQLModel
@@ -14,6 +14,5 @@ class EmailVerification(SQLModel, table=True):
     expires_at: datetime = Field(sa_type=DateTime(timezone=True))
     used_at: datetime | None = Field(sa_type=DateTime(timezone=True), default=None)
     created_at: datetime = Field(
-        sa_type=DateTime(timezone=True),
-        default_factory=lambda: datetime.now(timezone.utc)
+        sa_type=DateTime(timezone=True), default_factory=lambda: datetime.now(UTC)
     )

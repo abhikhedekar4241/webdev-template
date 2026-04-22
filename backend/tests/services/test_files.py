@@ -1,7 +1,9 @@
-import uuid
 from unittest.mock import MagicMock, patch
+
 from sqlmodel import Session
+
 from app.services.files import FilesService, files_service
+
 
 async def test_save_file_metadata(session: Session, alice, alice_org):
     f = await files_service.save_metadata(
@@ -50,9 +52,13 @@ async def test_soft_delete_file(session: Session, alice, alice_org):
 
 async def test_get_presigned_url_calls_minio():
     mock_client = MagicMock()
-    mock_client.presigned_get_object.return_value = "https://minio.example.com/key?sig=abc"
+    mock_client.presigned_get_object.return_value = (
+        "https://minio.example.com/key?sig=abc"
+    )
 
-    with patch.object(FilesService, "_client", new_callable=property, fget=lambda self: mock_client):
+    with patch.object(
+        FilesService, "_client", new_callable=property, fget=lambda self: mock_client
+    ):
         url = files_service.presigned_url("acme/doc.txt")
 
     assert url == "https://minio.example.com/key?sig=abc"

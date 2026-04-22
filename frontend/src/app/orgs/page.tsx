@@ -40,14 +40,12 @@ export default function OrgsPage() {
   const isLoading = orgsLoading || invsLoading;
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8 space-y-8">
+    <div className="mx-auto max-w-3xl space-y-8 px-6 py-8">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold">Organizations</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage your workspaces and teams
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Manage your workspaces and teams</p>
         </div>
         <Link
           href={ROUTES.orgs.new}
@@ -119,7 +117,7 @@ export default function OrgsPage() {
                 }`}
               >
                 <OrgAvatar name={org.name} />
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{org.name}</p>
                   <p className="truncate text-sm text-muted-foreground">/{org.slug}</p>
                 </div>

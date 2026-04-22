@@ -5,7 +5,7 @@ export default function Page() {
         <div className="h-8 w-8 rounded bg-muted-foreground/20" />
       </div>
       <h2 className="text-lg font-semibold capitalize">users</h2>
-      <p className="text-sm text-muted-foreground max-w-xs">
+      <p className="max-w-xs text-sm text-muted-foreground">
         This section is a placeholder. Wire up your own content here.
       </p>
     </div>

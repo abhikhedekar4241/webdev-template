@@ -42,10 +42,7 @@ async def upload_file(
 
     # Stream the file directly
     files_service.upload(
-        data=file.file,
-        length=size,
-        storage_key=storage_key,
-        content_type=content_type
+        data=file.file, length=size, storage_key=storage_key, content_type=content_type
     )
 
     f = await files_service.save_metadata(

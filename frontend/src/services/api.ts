@@ -9,7 +9,8 @@ interface RequestConfig extends Omit<RequestInit, "body"> {
 export function setToken(token: string): void {
   if (typeof window !== "undefined") {
     localStorage.setItem("access_token", token);
-    const secure = typeof location !== "undefined" && location.protocol === "https:" ? "; Secure" : "";
+    const secure =
+      typeof location !== "undefined" && location.protocol === "https:" ? "; Secure" : "";
     document.cookie = `access_token=${token}; path=/; SameSite=Lax${secure}`;
   }
 }
@@ -41,8 +42,8 @@ async function fetchWrapper<T>(url: string, config: RequestConfig = {}): Promise
   const headers: Record<string, string> = { ...config.headers };
 
   if (config.body instanceof FormData) {
-    const contentTypeKey = Object.keys(headers).find(k => k.toLowerCase() === 'content-type');
-    if (contentTypeKey && headers[contentTypeKey] === 'multipart/form-data') {
+    const contentTypeKey = Object.keys(headers).find((k) => k.toLowerCase() === "content-type");
+    if (contentTypeKey && headers[contentTypeKey] === "multipart/form-data") {
       delete headers[contentTypeKey];
     }
   } else if (!headers["Content-Type"] && !(config.body instanceof URLSearchParams)) {
@@ -57,7 +58,11 @@ async function fetchWrapper<T>(url: string, config: RequestConfig = {}): Promise
   }
 
   let body = config.body;
-  if (body && !(body instanceof FormData || body instanceof URLSearchParams) && typeof body === "object") {
+  if (
+    body &&
+    !(body instanceof FormData || body instanceof URLSearchParams) &&
+    typeof body === "object"
+  ) {
     body = JSON.stringify(body);
   }
 
@@ -104,11 +109,16 @@ async function fetchWrapper<T>(url: string, config: RequestConfig = {}): Promise
 }
 
 const api = {
-  get: <T>(url: string, config?: RequestConfig) => fetchWrapper<T>(url, { ...config, method: "GET" }),
-  post: <T>(url: string, data?: any, config?: RequestConfig) => fetchWrapper<T>(url, { ...config, method: "POST", body: data }),
-  put: <T>(url: string, data?: any, config?: RequestConfig) => fetchWrapper<T>(url, { ...config, method: "PUT", body: data }),
-  patch: <T>(url: string, data?: any, config?: RequestConfig) => fetchWrapper<T>(url, { ...config, method: "PATCH", body: data }),
-  delete: <T>(url: string, config?: RequestConfig) => fetchWrapper<T>(url, { ...config, method: "DELETE" }),
+  get: <T>(url: string, config?: RequestConfig) =>
+    fetchWrapper<T>(url, { ...config, method: "GET" }),
+  post: <T>(url: string, data?: any, config?: RequestConfig) =>
+    fetchWrapper<T>(url, { ...config, method: "POST", body: data }),
+  put: <T>(url: string, data?: any, config?: RequestConfig) =>
+    fetchWrapper<T>(url, { ...config, method: "PUT", body: data }),
+  patch: <T>(url: string, data?: any, config?: RequestConfig) =>
+    fetchWrapper<T>(url, { ...config, method: "PATCH", body: data }),
+  delete: <T>(url: string, config?: RequestConfig) =>
+    fetchWrapper<T>(url, { ...config, method: "DELETE" }),
 };
 
 export default api;

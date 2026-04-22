@@ -6,11 +6,11 @@ type NotificationResponse = NotificationData;
 
 export const notificationsService = {
   list: (unreadOnly = false) =>
-    api
-      .get<NotificationResponse[]>("/api/v1/notifications/", { params: { unread_only: unreadOnly } }),
+    api.get<NotificationResponse[]>("/api/v1/notifications/", {
+      params: { unread_only: unreadOnly },
+    }),
 
-  markAsRead: (id: string) =>
-    api.patch<NotificationResponse>(`/api/v1/notifications/${id}/read`),
+  markAsRead: (id: string) => api.patch<NotificationResponse>(`/api/v1/notifications/${id}/read`),
 
   markAllAsRead: () => api.post("/api/v1/notifications/read-all"),
 };

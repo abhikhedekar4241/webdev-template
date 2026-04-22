@@ -67,21 +67,31 @@ export default function OnboardingPage() {
             <Rocket className="h-6 w-6 text-primary-foreground" />
           </div>
           <h1 className="mt-6 text-2xl font-bold tracking-tight">Let&apos;s get started</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Setup your workspace in just a few steps.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Setup your workspace in just a few steps.
+          </p>
         </div>
 
         {/* Progress dots */}
         <div className="flex justify-center gap-2">
-          <div className={`h-1.5 w-8 rounded-full transition-colors ${step === 1 ? "bg-primary" : "bg-muted"}`} />
-          {hasInvitations && <div className={`h-1.5 w-8 rounded-full transition-colors ${step === 2 ? "bg-primary" : "bg-muted"}`} />}
-          <div className={`h-1.5 w-8 rounded-full transition-colors ${step === 3 || (!hasInvitations && step === 2) ? "bg-primary" : "bg-muted"}`} />
+          <div
+            className={`h-1.5 w-8 rounded-full transition-colors ${step === 1 ? "bg-primary" : "bg-muted"}`}
+          />
+          {hasInvitations && (
+            <div
+              className={`h-1.5 w-8 rounded-full transition-colors ${step === 2 ? "bg-primary" : "bg-muted"}`}
+            />
+          )}
+          <div
+            className={`h-1.5 w-8 rounded-full transition-colors ${step === 3 || (!hasInvitations && step === 2) ? "bg-primary" : "bg-muted"}`}
+          />
         </div>
 
         <div className="mt-8 space-y-6">
           {step === 1 && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="space-y-4 duration-300 animate-in fade-in slide-in-from-right-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
+                <label className="flex items-center gap-2 text-sm font-medium">
                   <User className="h-4 w-4" /> Your Full Name
                 </label>
                 <input
@@ -103,17 +113,19 @@ export default function OnboardingPage() {
           )}
 
           {step === 2 && hasInvitations && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div className="text-center space-y-1">
+            <div className="space-y-4 duration-300 animate-in fade-in slide-in-from-right-4">
+              <div className="space-y-1 text-center">
                 <h3 className="font-semibold">Pending Invitations</h3>
-                <p className="text-xs text-muted-foreground">You were invited to these organizations</p>
+                <p className="text-xs text-muted-foreground">
+                  You were invited to these organizations
+                </p>
               </div>
-              
-              <div className="space-y-4 max-h-[300px] overflow-y-auto px-1 py-1">
+
+              <div className="max-h-[300px] space-y-4 overflow-y-auto px-1 py-1">
                 {invitations.map((inv) => (
-                  <InvitationCard 
-                    key={inv.id} 
-                    invitation={inv} 
+                  <InvitationCard
+                    key={inv.id}
+                    invitation={inv}
                     onSuccess={() => handleComplete()}
                   />
                 ))}
@@ -122,7 +134,7 @@ export default function OnboardingPage() {
               <div className="flex flex-col gap-3 pt-2">
                 <button
                   onClick={() => setStep(3)}
-                  className="text-xs font-medium text-muted-foreground hover:text-foreground underline text-center"
+                  className="text-center text-xs font-medium text-muted-foreground underline hover:text-foreground"
                 >
                   None of these? Create a new organization
                 </button>
@@ -137,9 +149,9 @@ export default function OnboardingPage() {
           )}
 
           {(step === 3 || (step === 2 && !hasInvitations)) && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="space-y-4 duration-300 animate-in fade-in slide-in-from-right-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
+                <label className="flex items-center gap-2 text-sm font-medium">
                   <Building2 className="h-4 w-4" /> Company or Organization Name
                 </label>
                 <input

@@ -11,19 +11,15 @@ export const orgsService = {
 
   get: (orgId: string) => api.get<OrgResponse>(`/api/v1/orgs/${orgId}`),
 
-  getBySlug: (slug: string) =>
-    api.get<OrgResponse>(`/api/v1/orgs/slug/${slug}`),
+  getBySlug: (slug: string) => api.get<OrgResponse>(`/api/v1/orgs/slug/${slug}`),
 
-  create: (data: OrgCreate) =>
-    api.post<OrgResponse>("/api/v1/orgs/", data),
+  create: (data: OrgCreate) => api.post<OrgResponse>("/api/v1/orgs/", data),
 
-  update: (orgId: string, data: OrgUpdate) =>
-    api.patch<OrgResponse>(`/api/v1/orgs/${orgId}`, data),
+  update: (orgId: string, data: OrgUpdate) => api.patch<OrgResponse>(`/api/v1/orgs/${orgId}`, data),
 
   delete: (orgId: string) => api.delete(`/api/v1/orgs/${orgId}`),
 
-  listMembers: (orgId: string) =>
-    api.get<MembershipResponse[]>(`/api/v1/orgs/${orgId}/members`),
+  listMembers: (orgId: string) => api.get<MembershipResponse[]>(`/api/v1/orgs/${orgId}/members`),
 
   changeMemberRole: (orgId: string, userId: string, role: string) =>
     api.patch<MembershipResponse>(`/api/v1/orgs/${orgId}/members/${userId}`, {

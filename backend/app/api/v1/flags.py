@@ -60,5 +60,7 @@ async def get_flag_status(
     if not membership:
         raise HTTPException(status_code=403, detail="Not a member of this organization")
 
-    enabled = await flags_service.is_enabled(session, org_id=org_id, flag_name=flag_name)
+    enabled = await flags_service.is_enabled(
+        session, org_id=org_id, flag_name=flag_name
+    )
     return {"flag_name": flag_name, "enabled": enabled}

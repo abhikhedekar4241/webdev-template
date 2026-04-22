@@ -12,10 +12,10 @@ from app.models.file import File
 from app.models.org import Organization
 from app.models.user import User
 from app.schemas.admin import (
+    ImpersonateResponse,
     OrgListResponse,
     SystemStats,
     UserListResponse,
-    ImpersonateResponse,
 )
 from app.utils.query import apply_pagination_sorting_filtering
 

@@ -9,12 +9,9 @@ type MessageResponse = components["schemas"]["MessageResponse"];
 export const invitationsService = {
   list: () => api.get<InvitationResponse[]>("/api/v1/invitations/"),
 
-  create: (data: InvitationCreate) =>
-    api.post<InvitationResponse>("/api/v1/invitations/", data),
+  create: (data: InvitationCreate) => api.post<InvitationResponse>("/api/v1/invitations/", data),
 
-  accept: (invId: string) =>
-    api.post<MessageResponse>(`/api/v1/invitations/${invId}/accept`),
+  accept: (invId: string) => api.post<MessageResponse>(`/api/v1/invitations/${invId}/accept`),
 
-  decline: (invId: string) =>
-    api.post<MessageResponse>(`/api/v1/invitations/${invId}/decline`),
+  decline: (invId: string) => api.post<MessageResponse>(`/api/v1/invitations/${invId}/decline`),
 };

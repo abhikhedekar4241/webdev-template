@@ -22,7 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground animate-pulse">Verifying privileges…</p>
+        <p className="animate-pulse text-sm text-muted-foreground">Verifying privileges…</p>
       </div>
     );
   }
@@ -40,12 +40,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Mini Admin Sidebar */}
-      <aside className="w-64 border-r border-border bg-card flex flex-col">
-        <div className="h-14 flex items-center gap-2.5 px-6 border-b border-border">
+      <aside className="flex w-64 flex-col border-r border-border bg-card">
+        <div className="flex h-14 items-center gap-2.5 border-b border-border px-6">
           <Shield className="h-5 w-5 text-primary" />
           <span className="font-bold">System Admin</span>
         </div>
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 space-y-1 p-4">
           {navItems.map((item) => {
             const active = pathname === item.href;
             return (
@@ -53,7 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "block px-3 py-2 rounded-md text-sm transition-colors",
+                  "block rounded-md px-3 py-2 text-sm transition-colors",
                   active
                     ? "bg-primary/10 font-medium text-primary"
                     : "font-normal text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -64,15 +64,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             );
           })}
         </nav>
-        <div className="p-4 border-t border-border">
+        <div className="border-t border-border p-4">
           <Link href="/dashboard" className="text-xs text-muted-foreground hover:text-foreground">
             ← Back to App
           </Link>
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-14 border-b border-border flex items-center px-8 bg-card justify-between">
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <header className="flex h-14 items-center justify-between border-b border-border bg-card px-8">
           <h1 className="text-sm font-semibold">Admin Panel</h1>
           <div className="text-xs text-muted-foreground">Logged in as {me.full_name}</div>
         </header>

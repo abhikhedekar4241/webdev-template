@@ -66,11 +66,13 @@ export default function OrgDetailPage({ params }: { params: { orgSlug: string } 
             href={href}
             className="group flex items-center gap-4 rounded-xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/30 hover:shadow-md"
           >
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${color}`}>
+            <div
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${color}`}
+            >
               <Icon className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-semibold group-hover:text-primary transition-colors">{label}</p>
+              <p className="font-semibold transition-colors group-hover:text-primary">{label}</p>
               <p className="text-sm text-muted-foreground">{description}</p>
             </div>
           </Link>

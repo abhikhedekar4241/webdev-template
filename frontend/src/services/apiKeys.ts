@@ -6,14 +6,10 @@ export type ApiKeyCreated = components["schemas"]["ApiKeyCreated"];
 type ApiKeyCreate = components["schemas"]["ApiKeyCreate"];
 
 export const apiKeysService = {
-  list: (orgId: string) =>
-    api
-      .get<ApiKeyResponse[]>(`/api/v1/orgs/${orgId}/api-keys`),
+  list: (orgId: string) => api.get<ApiKeyResponse[]>(`/api/v1/orgs/${orgId}/api-keys`),
 
   create: (orgId: string, name: string) =>
-    api
-      .post<ApiKeyCreated>(`/api/v1/orgs/${orgId}/api-keys`, { name } as ApiKeyCreate),
+    api.post<ApiKeyCreated>(`/api/v1/orgs/${orgId}/api-keys`, { name } as ApiKeyCreate),
 
-  revoke: (orgId: string, keyId: string) =>
-    api.delete(`/api/v1/orgs/${orgId}/api-keys/${keyId}`),
+  revoke: (orgId: string, keyId: string) => api.delete(`/api/v1/orgs/${orgId}/api-keys/${keyId}`),
 };
